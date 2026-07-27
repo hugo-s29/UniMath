@@ -659,34 +659,290 @@ Section FreeModelAdjunction.
   Definition free_sigma_monoid : V ⟶  SigmaMonoid θ
     := make_functor free_sigma_monoid_data free_sigma_monoid_laws.
 
-  Definition free_sigma_monoid_adjuction_unit
-    : functor_identity V ⟹ free_sigma_monoid ∙ forgetful.
-  Proof.
-  Admitted.
+  Section HomSetMap.
+    Context (X : V) (N : SigmaMonoid θ).
 
-  Definition free_sigma_monoid_adjuction_counit
-    : forgetful ∙ free_sigma_monoid ⟹ functor_identity (SigmaMonoid θ).
-  Proof.
-  Admitted.
+    Let UN : V := forgetful N.
 
-  Lemma free_sigma_monoid_adjuction_forms_adjunction
-    : form_adjunction _ _ free_sigma_monoid_adjuction_unit 
-        free_sigma_monoid_adjuction_counit.
+    Definition free_sigma_monoid_adjuction_homset_map
+      (g' : SigmaMonoid θ ⟦ free_sigma_monoid X, N ⟧)
+      : V ⟦ X, forgetful N ⟧
+      := luinv^{Mon_V}_{X} · η X ⊗^{Mon_V}_{r} X · p X · pr1 g'.
+
+    Section FixAMorphism.
+      Context (f : V ⟦ X, forgetful N ⟧).
+
+      Lemma free_sigma_monoid_adjuction_model_compatibility
+        : SigmaMonoid_compatibility (sum_H_tens_v_strength X) 
+          (UN,, BinCoproductArrow _ (SigmaMonoid_τ θ N) (UN ⊗^{ Mon_V}_{l} f · SigmaMonoid_μ θ N),, pr212 N).
+      Proof.
+      unfold SigmaMonoid_compatibility, SigmaMonoid_characteristic_equation; cbn.
+      unfold sum_H_tens_v_strength_data, BinCoproduct_of_functors_mor; cbn.
+      repeat rewrite <- assoc; symmetry.
+      use (iso_inv_to_left _ _ _ (z_iso_to_iso (make_z_iso _ _ (pr2 δ (_ ,, SigmaMonoid_η _ N) _ _)))).
+      cbn; unfold precomp_with.
+      rewrite id_right; do 2 rewrite assoc.
+      use BinCoproductArrowsEq; do 4 rewrite assoc.
+      - etrans.
+        { do 2 apply cancel_postcomposition; use BinCoproductIn1Commutes. }
+        cbn; fold UN; rewrite <- (bifunctor_leftcomp Mon_V).
+        etrans.
+        { apply cancel_postcomposition; apply maponpaths; use BinCoproductIn1Commutes. }
+        symmetry; etrans.
+        { do 2 apply cancel_postcomposition; use BinCoproductIn1Commutes. }
+        do 2 rewrite <- assoc.
+        etrans.
+        { apply cancel_precomposition; rewrite assoc; apply cancel_postcomposition.
+          apply BinCoproductOfArrowsIn1. }
+        do 2 rewrite assoc; rewrite <- assoc.
+        etrans.
+        { apply cancel_precomposition; use BinCoproductIn1Commutes. }
+        use SigmaMonoid_is_compatible.
+      - etrans.
+        { do 2 apply cancel_postcomposition; use BinCoproductIn2Commutes. }
+        cbn; fold UN; rewrite <- (bifunctor_leftcomp Mon_V).
+        etrans.
+        { apply cancel_postcomposition; apply maponpaths; use BinCoproductIn2Commutes. }
+        symmetry; etrans.
+        { do 2 apply cancel_postcomposition; use BinCoproductIn2Commutes. }
+        do 2 rewrite <- assoc.
+        etrans.
+        { apply cancel_precomposition; rewrite assoc; apply cancel_postcomposition.
+          apply BinCoproductOfArrowsIn2. }
+        do 2 rewrite assoc; rewrite <- assoc.
+        etrans.
+        { apply cancel_precomposition; use BinCoproductIn2Commutes. }
+        rewrite <- assoc.
+        apply (z_iso_inv_on_right  _ _ _ (make_z_iso _ _ (monoidal_associatorisolaw _ _ _ _))).
+        cbn; rewrite (bifunctor_leftcomp Mon_V); do 3 rewrite assoc.
+        etrans.
+        { apply cancel_postcomposition; use (bifunctor_equalwhiskers Mon_V). }
+        unfold functoronmorphisms2.
+        rewrite monoidal_associatornatleft.
+        do 3 rewrite <- assoc; use cancel_precomposition.
+        rewrite assoc.
+        use (!monoid_to_assoc_law _ (pr2 (SigmaMonoid_to_monoid _ N))).
+      Qed.
+
+      Definition free_sigma_monoid_adjuction_model
+        : SigmaMonoid (sum_H_tens_v_strength X).
+      Proof.
+        use (UN ,, (_ ,, _) ,, _); cbn.
+        - use BinCoproductArrow; cbn.
+          + exact (SigmaMonoid_τ _ N).
+          + exact (UN ⊗^{Mon_V}_{l} f · SigmaMonoid_μ _ N).
+        - use (pr2 (SigmaMonoid_to_monoid _ N)).
+        - use free_sigma_monoid_adjuction_model_compatibility.
+      Defined.
+
+      Definition free_sigma_monoid_adjuction_model_arrow
+        : free_sigma_monoid_ob_initial_monoid_tens_v X --> free_sigma_monoid_adjuction_model
+        := InitialArrow (free_sigma_monoid_ob_initial_monoid_tens_v X) free_sigma_monoid_adjuction_model.
+
+      Let g : M X --> UN := pr1 free_sigma_monoid_adjuction_model_arrow.
+
+      Definition free_sigma_monoid_adjuction_homset_invmap_τ
+        : τ' X · g = # H g · SigmaMonoid_τ _ N.
+      Proof.
+        unfold τ'; rewrite <- assoc.
+        etrans.
+        { apply cancel_precomposition; use (pr112 free_sigma_monoid_adjuction_model_arrow). }
+        rewrite assoc; cbn; etrans.
+        { apply cancel_postcomposition. use BinCoproductOfArrowsIn1. }
+        cbn; fold g.
+        rewrite <- assoc; use cancel_precomposition.
+        use BinCoproductIn1Commutes.
+      Qed.
+
+      Definition free_sigma_monoid_adjuction_homset_invmap_p
+        : p X · g = g ⊗^{Mon_V} f · SigmaMonoid_μ _ N.
+      Proof.
+        unfold p; rewrite <- assoc.
+        etrans.
+        { apply cancel_precomposition; use (pr112 free_sigma_monoid_adjuction_model_arrow). }
+        rewrite assoc; cbn; etrans.
+        { apply cancel_postcomposition. use BinCoproductOfArrowsIn2. }
+        cbn; fold g.
+        unfold functoronmorphisms1.
+        do 2 rewrite <- assoc; use cancel_precomposition.
+        use BinCoproductIn2Commutes.
+      Qed.
+
+      Definition free_sigma_monoid_adjuction_homset_invmap
+        : SigmaMonoid θ ⟦ free_sigma_monoid X, N ⟧.
+      Proof.
+        refine (g ,, (_ ,, _) ,, tt); cbn.
+        - use free_sigma_monoid_adjuction_homset_invmap_τ.
+        - use (pr212 free_sigma_monoid_adjuction_model_arrow).
+      Defined.
+
+      Let f' : SigmaMonoid θ ⟦ free_sigma_monoid X, N ⟧
+        := free_sigma_monoid_adjuction_homset_invmap.
+
+      Lemma free_sigma_monoid_adjuction_homset_map_invmap
+        : free_sigma_monoid_adjuction_homset_map free_sigma_monoid_adjuction_homset_invmap = f.
+      Proof.
+        unfold free_sigma_monoid_adjuction_homset_map.
+        unfold free_sigma_monoid_adjuction_homset_invmap.
+        do 2 rewrite <- assoc.
+        apply (z_iso_inv_on_right  _ _ _ (make_z_iso _ _ (monoidal_leftunitorisolaw _ _))); cbn.
+        etrans.
+        { apply cancel_precomposition; use free_sigma_monoid_adjuction_homset_invmap_p. }
+        unfold functoronmorphisms1.
+        rewrite assoc, <- monoidal_leftunitornat, assoc, <- (bifunctor_rightcomp Mon_V).
+        etrans.
+        { do 2 apply cancel_postcomposition; use maponpaths.
+          + use SigmaMonoid_η.
+          + use (pr2 (pr212 free_sigma_monoid_adjuction_model_arrow)). }
+        etrans.
+        { apply cancel_postcomposition; use (bifunctor_equalwhiskers Mon_V). }
+        unfold functoronmorphisms2.
+        rewrite <- assoc; use cancel_precomposition.
+        use monoid_to_unit_left_law.
+      Qed.
+
+      Section FixAnInverse.
+        Context (inverse : hfiber free_sigma_monoid_adjuction_homset_map f).
+        Let h : SigmaMonoid θ ⟦ free_sigma_monoid X, N ⟧ := pr1 inverse.
+        Let hyp : free_sigma_monoid_adjuction_homset_map h = f := pr2 inverse.
+
+        Local Lemma h_respects_τ
+          : τ X · pr1 h =
+              BinCoproductOfArrows V _ _ (# H (pr1 h)) (pr1 h ⊗^{ Mon_V}_{r} X)
+            · BinCoproductArrow (CP (H (pr1 N)) (pr1 N ⊗_{ Mon_V} X)) (SigmaMonoid_τ θ N) (pr1 N ⊗^{ Mon_V}_{l} f 
+            · SigmaMonoid_μ θ N).
+        Proof.
+          use BinCoproductArrowsEq; do 2 rewrite assoc; symmetry; fold (τ' X) (p X).
+          - etrans.
+            { apply cancel_postcomposition; use BinCoproductOfArrowsIn1. }
+            rewrite <- assoc; etrans.
+            { apply cancel_precomposition; use BinCoproductIn1Commutes. }
+            use (!pr112 h).
+          - etrans.
+            { apply cancel_postcomposition; use BinCoproductOfArrowsIn2. }
+            rewrite <- assoc; etrans.
+            { apply cancel_precomposition; use BinCoproductIn2Commutes. }
+            rewrite assoc.
+            etrans.
+            { apply cancel_postcomposition; use (bifunctor_equalwhiskers Mon_V). }
+            unfold functoronmorphisms2.
+            rewrite <- hyp.
+            unfold free_sigma_monoid_adjuction_homset_map.
+            do 3 rewrite (bifunctor_leftcomp Mon_V).
+            do 2 rewrite <- assoc; etrans.
+            { apply cancel_precomposition; rewrite assoc.
+              etrans; [| use (pr1 (pr212 h))].
+              apply cancel_postcomposition; symmetry.
+              apply (bifunctor_equalwhiskers Mon_V). }
+            rewrite assoc; use cancel_postcomposition.
+            rewrite <- assoc; etrans.
+            { apply cancel_precomposition; use (!free_sigma_monoid_ob_compatibility_p X). }
+            rewrite <- assoc; etrans.
+            { apply cancel_precomposition; do 2 rewrite assoc. 
+              rewrite (monoidal_associatorinvnatleftright Mon_V).
+              apply cancel_postcomposition; rewrite assoc'.
+              apply cancel_precomposition.
+              rewrite <- (bifunctor_rightcomp Mon_V).
+              apply maponpaths; use monoid_to_unit_right_law. }
+            rewrite assoc, assoc, <- id_left.
+            use cancel_postcomposition.
+            (* Triangle identity *)
+            rewrite <- (monoidal_triangleidentity Mon_V), assoc'.
+            etrans. 
+            { apply cancel_precomposition; rewrite assoc; apply cancel_postcomposition. 
+              use (pr2 (monoidal_associatorisolaw _ _ _ _)). }
+            rewrite id_left, <- (bifunctor_leftcomp Mon_V), <- (bifunctor_leftid Mon_V).
+            use maponpaths.
+            use (pr2 (monoidal_leftunitorisolaw _ _)).
+        Qed.
+
+        Local Definition h' 
+          : free_sigma_monoid_ob_initial_monoid_tens_v X --> free_sigma_monoid_adjuction_model.
+        Proof.
+          refine (pr1 h ,, (_ ,, _) ,, tt); cbn.
+          - exact h_respects_τ.
+          - exact (pr212 h).
+        Defined.
+          
+
+        Definition free_sigma_monoid_adjuction_homset_map_weq_unique : h = f'.
+        Proof.
+          use invmap; [|use path_sigma_hprop|].
+          { do 2 try use isapropdirprod.
+            - use homset_property.
+            - use isaprop_is_monoid_mor.
+            - use isapropunit. }
+          cbn.
+          use (maponpaths pr1 (InitialArrowUnique _ _ h')).
+        Qed.
+
+        Definition free_sigma_monoid_adjuction_homset_map_weq_unique_pair
+          : inverse  = f',, free_sigma_monoid_adjuction_homset_map_invmap.
+        Proof.
+          use invmap; [|use path_sigma_hprop|].
+          - use homset_property.
+          - use free_sigma_monoid_adjuction_homset_map_weq_unique.
+        Qed.
+      End FixAnInverse.
+
+      Lemma free_sigma_monoid_adjuction_homset_map_weq
+        : iscontr (hfiber free_sigma_monoid_adjuction_homset_map f).
+      Proof.
+        use tpair.
+        - exists free_sigma_monoid_adjuction_homset_invmap.
+          use free_sigma_monoid_adjuction_homset_map_invmap.
+        - use free_sigma_monoid_adjuction_homset_map_weq_unique_pair.
+      Defined.
+
+    End FixAMorphism.
+  End HomSetMap.
+
+  Lemma free_sigma_monoid_adjuction_homset_weq (X : V) (N : SigmaMonoid θ)
+    : SigmaMonoid θ ⟦ free_sigma_monoid X, N ⟧ ≃ V ⟦ X, forgetful N ⟧.
   Proof.
-  Admitted.
+    exists (free_sigma_monoid_adjuction_homset_map X N).
+    intro.
+    use free_sigma_monoid_adjuction_homset_map_weq.
+  Defined.
+
+  Lemma free_sigma_monoid_adjuction_homset_weq_nat1 (X : V) (N : SigmaMonoid θ) 
+    (f : SigmaMonoid θ ⟦ free_sigma_monoid X, N ⟧) (X' : V) (z : V ⟦ X', X ⟧)
+    : free_sigma_monoid_adjuction_homset_weq X' N (# free_sigma_monoid z · f)
+    = z · free_sigma_monoid_adjuction_homset_weq X N f.
+  Proof.
+    cbn; unfold free_sigma_monoid_adjuction_homset_map; cbn.
+    do 4 rewrite assoc.
+    use cancel_postcomposition.
+    rewrite <- monoidal_leftunitorinvnat.
+    do 4 rewrite assoc'; use cancel_precomposition.
+    rewrite free_sigma_monoid_mor_p, assoc, assoc, assoc.
+    use cancel_postcomposition.
+    etrans.
+    { rewrite <- assoc; apply cancel_precomposition.
+      symmetry; use (bifunctor_equalwhiskers Mon_V). }
+    unfold functoronmorphisms1; rewrite assoc; etrans.
+    { apply cancel_postcomposition; rewrite <- (bifunctor_rightcomp Mon_V); use maponpaths.
+      - exact (η X).
+      - use (pr2 (pr212 (free_sigma_monoid_mor_init_arrow _ _ z))). }
+    use (bifunctor_equalwhiskers Mon_V).
+  Qed.
+
+  Lemma free_sigma_monoid_adjuction_homset_weq_nat2 (X : V) (N : SigmaMonoid θ)
+    (f : SigmaMonoid θ ⟦ free_sigma_monoid X, N ⟧) 
+    (N' : SigmaMonoid θ) (t : SigmaMonoid θ ⟦ N, N' ⟧)
+    : free_sigma_monoid_adjuction_homset_weq X N' (f · t) =
+      free_sigma_monoid_adjuction_homset_weq X N f · # forgetful t.
+  Proof.
+    cbn; unfold free_sigma_monoid_adjuction_homset_map; cbn.
+    now rewrite assoc.
+  Qed.
 
   Theorem free_sigma_monoid_adjuction
     : are_adjoints free_sigma_monoid forgetful .
   Proof.
-    use make_are_adjoints.
-    - exact free_sigma_monoid_adjuction_unit.
-    - exact free_sigma_monoid_adjuction_counit.
-    - exact free_sigma_monoid_adjuction_forms_adjunction.
+    use adj_from_nathomweq; use (_ ,, _ ,, _); hnf.
+    - exact free_sigma_monoid_adjuction_homset_weq.
+    - exact free_sigma_monoid_adjuction_homset_weq_nat1.
+    - exact free_sigma_monoid_adjuction_homset_weq_nat2.
   Defined.
-
-
-
-
-
-
 End FreeModelAdjunction.
