@@ -49,16 +49,16 @@ Section FixACategory.
 
   Let EndC_swapped : monoidal_cat :=  _ ,, monoidal_swapped EndC.
 
-  Let Monoids : category := category_of_monoids_in_monoidal_cat EndC.
-  Let Monads : category := category_Monad C.
+  Let Monoid : category := category_of_monoids_in_monoidal_cat EndC.
+  Let Monad : category := category_Monad C.
 
-  Let Monoids_swapped : category := category_of_monoids_in_monoidal_cat EndC_swapped.
+  Let Monoid_swapped : category := category_of_monoids_in_monoidal_cat EndC_swapped.
 
 Section MonoidToMonad.
 
 Section OnObjects.
 
-  Context (M : Monoids).
+  Context (M : Monoid).
 
   Let x := monoid_carrier _ M.
   Let η := monoid_unit _ M.
@@ -83,12 +83,12 @@ Section OnObjects.
       + apply id_left.
   Qed.
 
-  Definition monoid_to_monad_CAT : Monads
+  Definition monoid_to_monad_CAT : Monad
     := _ ,, _ ,, monoid_to_disp_Monad_laws_CAT.
 
 End OnObjects.
 
-  Lemma monoid_to_monad_map_is_monad_mor {M M' : Monoids} (f : M --> M')
+  Lemma monoid_to_monad_map_is_monad_mor {M M' : Monoid} (f : M --> M')
     : disp_Monad_Mor_laws (monoid_to_disp_Monad_data_CAT M) (monoid_to_disp_Monad_data_CAT M') (pr1 f).
   Proof.
     induction f as [f [H1 H2]]; split; intro A; cbn in f, H1, H2 |- *.
@@ -105,13 +105,13 @@ End OnObjects.
   Qed.
 
   Definition monoid_to_monad_map
-    (M M' : Monoids)
+    (M M' : Monoid)
     (f : M --> M') : monoid_to_monad_CAT M --> monoid_to_monad_CAT M'
     := pr1 f ,, monoid_to_monad_map_is_monad_mor f.
 
 
   Definition monoid_to_monad_functor_data
-    : functor_data Monoids Monads
+    : functor_data Monoid Monad
     := make_functor_data monoid_to_monad_CAT monoid_to_monad_map.
 
   Lemma monoid_to_monad_is_functor
@@ -127,7 +127,7 @@ End OnObjects.
   Qed.
 
   Definition monoid_to_monad_functor
-    : Monoids ⟶ Monads
+    : Monoid ⟶ Monad
     := make_functor monoid_to_monad_functor_data monoid_to_monad_is_functor.
 
 End MonoidToMonad.
@@ -135,8 +135,7 @@ End MonoidToMonad.
 Section MonadToMonoid.
 
 Section OnObjects.
-
-  Context (M : Monads).
+  Context (M : Monad).
 
   Definition monad_to_monoid_CAT_data : monoid_data EndC (functor_from_Monad M)
     := μ M ,, η M.
@@ -152,12 +151,12 @@ Section OnObjects.
   Definition monad_to_monoid_CAT_disp : monoid EndC (functor_from_Monad M)
     := monad_to_monoid_CAT_data,,monad_to_monoid_CAT_laws.
 
-  Definition monad_to_monoid_CAT : Monoids
+  Definition monad_to_monoid_CAT : Monoid
     := _,,monad_to_monoid_CAT_disp.
 
 End OnObjects.
 
-  Lemma monad_to_monoid_map_is_monoid_mor {M M' : Monads} (f : M --> M')
+  Lemma monad_to_monoid_map_is_monoid_mor {M M' : Monad} (f : M --> M')
     : is_monoid_mor _ (monad_to_monoid_CAT_disp M) (monad_to_monoid_CAT_disp M') (pr1 f).
   Proof.
     induction f as [f [H1 H2]]; split; (apply nat_trans_eq; [apply homset_property|]).
@@ -169,12 +168,12 @@ End OnObjects.
   Qed.
 
   Definition monad_to_monoid_map
-    (M M' : Monad C)
+    (M M' : Monad)
     (f : M --> M') : monad_to_monoid_CAT M --> monad_to_monoid_CAT M'
     := pr1 f ,, monad_to_monoid_map_is_monoid_mor f.
 
   Definition monad_to_monoid_functor_data
-    : functor_data Monads Monoids
+    : functor_data Monad Monoid
     := make_functor_data monad_to_monoid_CAT monad_to_monoid_map.
 
   Lemma monad_to_monoid_is_functor
@@ -188,7 +187,7 @@ End OnObjects.
   Qed.
 
   Definition monad_to_monoid_functor
-    : Monads ⟶ Monoids
+    : Monad ⟶ Monoid
     := make_functor monad_to_monoid_functor_data monad_to_monoid_is_functor.
 
 End MonadToMonoid.
@@ -203,7 +202,7 @@ Proof.
 Qed.
 
 Lemma monad_to_monoid_to_monad
-  (M : Monad C)
+  (M : Monad)
   : monoid_to_monad_CAT (monad_to_monoid_CAT M) = M.
 Proof.
   use (total2_paths2_f (idpath _)).
@@ -212,7 +211,7 @@ Proof.
 Qed.
 
 Definition nat_id_monoid_to_monad_to_monoid_data
-  : nat_trans_data (functor_identity Monads) (monad_to_monoid_functor ∙ monoid_to_monad_functor)
+  : nat_trans_data (functor_identity Monad) (monad_to_monoid_functor ∙ monoid_to_monad_functor)
   := λ M,
     transportb
       (λ x, ∑ f, disp_Monad_Mor_laws (pr12 x) (pr12 x) f)
@@ -233,11 +232,11 @@ Proof.
 Qed.
 
 Definition nat_id_monoid_to_monad_to_monoid
-  : functor_identity Monads ⟹ monad_to_monoid_functor ∙ monoid_to_monad_functor
+  : functor_identity Monad ⟹ monad_to_monoid_functor ∙ monoid_to_monad_functor
   := nat_id_monoid_to_monad_to_monoid_data ,, nat_id_monoid_to_monad_to_monoid_data_is_nat.
 
 Definition nat_monad_to_monoid_to_monad_id_data
-  : nat_trans_data (monoid_to_monad_functor ∙ monad_to_monoid_functor) (functor_identity Monoids)
+  : nat_trans_data (monoid_to_monad_functor ∙ monad_to_monoid_functor) (functor_identity Monoid)
   := (λ M, nat_trans_id _,, id_is_monoid_mor _ _).
 
 Lemma nat_monad_to_monoid_to_monad_id_is_nat
@@ -250,11 +249,11 @@ Proof.
 Qed.
 
 Definition nat_monad_to_monoid_to_monad_id
-  : monoid_to_monad_functor ∙ monad_to_monoid_functor ⟹ functor_identity Monoids
+  : monoid_to_monad_functor ∙ monad_to_monoid_functor ⟹ functor_identity Monoid
   := nat_monad_to_monoid_to_monad_id_data ,, nat_monad_to_monoid_to_monad_id_is_nat.
 
 Definition adjunction_monad_monoid
-  : adjunction_data Monads Monoids
+  : adjunction_data Monad Monoid
   := make_adjunction_data
         monad_to_monoid_functor
         monoid_to_monad_functor
@@ -290,7 +289,7 @@ Proof.
 Qed.
 
 Definition monad_equiv_monoid_endcat
-  : equivalence_of_cats Monads Monoids
+  : equivalence_of_cats Monad Monoid
   := make_equivalence_of_cats adjunction_monad_monoid adjunction_monad_monoid_equiv.
 
 
@@ -298,20 +297,20 @@ Definition monad_equiv_monoid_endcat
 Section FixAMonoid.
   (* We show that monad left modules are equivalent to monoid left-modules, that is, right-modules for the swapped monoidal product *)
 
-  Context (Monoid' : Monoids).
-  Let Monad : Monads := monoid_to_monad_CAT Monoid'.
-  Let Monoid : Monoids_swapped := monoid_to_monoid_swapped_mon EndC Monoid'.
+  Context (monoid' : Monoid).
+  Let monad : Monad := monoid_to_monad_CAT monoid'.
+  Let monoid : Monoid_swapped := monoid_to_monoid_swapped_mon EndC monoid'.
 
-  Let MonoidModules : category := MOD (pr1 Monoid) (pr2 Monoid).
-  Let MonadModules : category := category_LModule Monad C.
+  Let monoidModule : category := MOD (pr1 monoid) (pr2 monoid).
+  Let monadModule : category := category_LModule monad C.
 
   Section FixAMonadModule.
-    Context (monad_module : MonadModules).
+    Context (monad_module : monadModule).
     Let M : C ⟶  C := pr11 monad_module.
-    Let bind : pr1 Monad ∙ M ⟹  M := pr21 monad_module.
+    Let bind : pr1 monad ∙ M ⟹  M := pr21 monad_module.
 
     Lemma monad_to_monoid_modules_laws
-      : module_laws _ (pr2 Monoid) bind.
+      : module_laws _ (pr2 monoid) bind.
     Proof.
       split.
       - apply nat_trans_eq; [use homset_property |]; cbn; intro.
@@ -322,23 +321,23 @@ Section FixAMonoid.
     Qed.
 
     Definition monad_to_monoid_modules
-      : MonoidModules
+      : monoidModule
       := M ,, bind ,, monad_to_monoid_modules_laws.
   End FixAMonadModule.
 
   Section FixAMonadModuleMorphism.
-    Context (monad_module : MonadModules).
+    Context (monad_module : monadModule).
     Let M : C ⟶  C := pr11 monad_module.
-    Let bind : pr1 Monad ∙ M ⟹  M := pr21 monad_module.
+    Let bind : pr1 monad ∙ M ⟹  M := pr21 monad_module.
 
-    Context (monad_module' : MonadModules).
+    Context (monad_module' : monadModule).
     Let M' : C ⟶  C := pr11 monad_module'.
-    Let bind' : pr1 Monad ∙ M' ⟹  M' := pr21 monad_module'.
+    Let bind' : pr1 monad ∙ M' ⟹  M' := pr21 monad_module'.
 
     Context (f : monad_module --> monad_module').
 
     Lemma monad_to_monoid_modules_map_is_module_mor
-      : is_module_mor _ (pr2 Monoid)
+      : is_module_mor _ (pr2 monoid)
         (pr2 (monad_to_monoid_modules monad_module))
         (pr2 (monad_to_monoid_modules monad_module'))
         (pr1 f).
@@ -354,7 +353,7 @@ Section FixAMonoid.
 
 
   Definition monad_to_monoid_modules_functor_data
-    : functor_data MonadModules MonoidModules
+    : functor_data monadModule monoidModule
     := monad_to_monoid_modules ,,  monad_to_monoid_modules_map.
 
   Lemma monad_to_monoid_modules_functor_laws
@@ -364,16 +363,16 @@ Section FixAMonoid.
   Qed.
 
   Definition monad_to_monoid_modules_functor
-    : MonadModules ⟶ MonoidModules
+    : monadModule ⟶ monoidModule
     := make_functor monad_to_monoid_modules_functor_data monad_to_monoid_modules_functor_laws.
 
   Section FixAMonoidModule.
-    Context (monoid_module : MonoidModules).
+    Context (monoid_module : monoidModule).
     Let M : C ⟶  C := pr1 monoid_module.
-    Let bind : pr1 Monad ∙ M ⟹  M := pr12 monoid_module.
+    Let bind : pr1 monad ∙ M ⟹  M := pr12 monoid_module.
 
     Lemma monoid_to_monad_modules_laws
-      : LModule_laws Monad (M,, bind).
+      : LModule_laws monad (M,, bind).
     Proof.
       split.
       - intro; cbn.
@@ -383,18 +382,18 @@ Section FixAMonoid.
         use (maponpaths (λ f, pr1 f c) (module_laws_assoc_from_module _ _ (pr2 monoid_module))).
     Qed.
 
-    Definition monoid_to_monad_modules : MonadModules
+    Definition monoid_to_monad_modules : monadModule
       := (M ,, bind) ,, monoid_to_monad_modules_laws.
   End FixAMonoidModule.
 
   Section FixAMonoidModuleMorphism.
-    Context (monoid_module : MonoidModules).
+    Context (monoid_module : monoidModule).
     Let M : C ⟶  C := pr1 monoid_module.
-    Let bind : pr1 Monad ∙ M ⟹  M := pr12 monoid_module.
+    Let bind : pr1 monad ∙ M ⟹  M := pr12 monoid_module.
 
-    Context (monoid_module' : MonoidModules).
+    Context (monoid_module' : monoidModule).
     Let M' : C ⟶  C := pr1 monoid_module'.
-    Let bind' : pr1 Monad ∙ M' ⟹  M' := pr12 monoid_module'.
+    Let bind' : pr1 monad ∙ M' ⟹  M' := pr12 monoid_module'.
 
     Context (f : monoid_module --> monoid_module').
 
@@ -409,7 +408,7 @@ Section FixAMonoid.
   End FixAMonoidModuleMorphism.
 
   Definition monoid_to_monad_modules_functor_data
-    : functor_data MonoidModules MonadModules
+    : functor_data monoidModule monadModule
     := monoid_to_monad_modules ,, monoid_to_monad_modules_map.
 
   Lemma monoid_to_monad_modules_functor_laws
@@ -420,7 +419,7 @@ Section FixAMonoid.
   Qed.
 
   Definition monoid_to_monad_modules_functor
-    : MonoidModules ⟶ MonadModules
+    : monoidModule ⟶ monadModule
     := make_functor monoid_to_monad_modules_functor_data monoid_to_monad_modules_functor_laws.
 
   Definition adjunction_monad_monoid_modules_unit
@@ -452,7 +451,7 @@ Section FixAMonoid.
   Defined.
 
   Definition adjunction_monad_monoid_modules
-    : adjunction_data MonadModules MonoidModules.
+    : adjunction_data monadModule monoidModule.
   Proof.
     use make_adjunction_data.
     - exact monad_to_monoid_modules_functor.
@@ -491,7 +490,7 @@ Section FixAMonoid.
 
 
   Definition monad_modules_equiv_monoid_modules_endcat
-    : equivalence_of_cats MonadModules MonoidModules.
+    : equivalence_of_cats monadModule monoidModule.
   Proof.
     use make_equivalence_of_cats.
     - exact adjunction_monad_monoid_modules.
