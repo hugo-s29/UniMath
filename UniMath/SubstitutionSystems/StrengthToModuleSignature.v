@@ -450,7 +450,10 @@ Section StrengthToModuleSignature.
               id_left, id_left, id_right
           ).
       - abstract (use id_right).
-      - abstract (now rewrite functor_id, id_left, id_right).
+      - abstract (
+          unfold is_model_of_signature_mor; cbn;
+          now rewrite functor_id, id_left, id_right
+        ).
     Defined.
 
     Local Lemma equivalence_models_sigma_monoids_adjuction_counit_law
@@ -501,7 +504,10 @@ Section StrengthToModuleSignature.
                 id_right, id_right, id_left
             ).
         + abstract (use id_right).
-        + abstract (now rewrite functor_id, id_left, id_right).
+        + abstract (
+            unfold is_model_of_signature_mor; cbn;
+            now rewrite functor_id, id_left, id_right
+          ).
         + use subtypePath.
           { intro; use homset_property. }
           apply MON_mor_eq.
