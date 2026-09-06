@@ -7,7 +7,7 @@
 
  Contents
  1. Definitions
- 2. Initial models as fix-points of I + Σ(-)
+ 2. Initial models as fixed points of I + Σ(-)
  3. Total category of models and signatures
  4. Modularity
 
@@ -56,21 +56,30 @@ Section ModelsOfModuleSignature.
      1. Definitions
    *)
 
+  Definition is_model_of_signature_mor
+    {R R' : MON C}
+    (r : pr1 (Σ R) --> pr1 R)
+    (r' : pr1 (Σ R') --> pr1 R')
+    (f : R --> R')
+    :=
+    r · pr1 f = pr1 (section_disp_on_morphisms (pr1 Σ) f) · r'.
+
   Definition models_of_module_signatures_disp_cat_ob_mor : disp_cat_ob_mor (MON C).
   Proof.
     use make_disp_cat_ob_mor.
-    - intro R;
-      exact (Σ R --> trivial_module (pr1 R) (pr2 R)).
-    - intros R R' r r' f;
-      exact (pr1 r · pr1 f = pr1 (section_disp_on_morphisms (pr1 Σ) f) · pr1 r').
+    - intro R; exact (Σ R --> trivial_module (pr1 R) (pr2 R)).
+    - intros R R' r r' f; exact (is_model_of_signature_mor (pr1 r) (pr1 r') f).
   Defined.
 
   Lemma models_of_module_signatures_disp_cat_id_comp
     : disp_cat_id_comp (MON C) models_of_module_signatures_disp_cat_ob_mor.
   Proof.
     split; intros.
-    - cbn; now rewrite @section_disp_id, id_left, id_right.
-    - simpl; rewrite @section_disp_comp, assoc; cbn; etrans.
+    - cbn; unfold is_model_of_signature_mor;
+      now rewrite @section_disp_id, id_left, id_right.
+    - simpl; unfold is_model_of_signature_mor.
+      rewrite @section_disp_comp; simpl.
+      rewrite assoc; cbn; etrans.
       + refine (maponpaths (λ x, x · _) X).
       + do 2 rewrite <- assoc; now use maponpaths.
   Qed.
@@ -95,10 +104,10 @@ Section ModelsOfModuleSignature.
 End ModelsOfModuleSignature.
 
 (**
-   2. Initial models as fix-points of I + Σ(-)
+   2. Initial models as fixed points of I + Σ(-)
   *)
 
-(* A lemma very similar to Lambek's on initial algebras as fix-points *)
+(* A lemma very similar to Lambek's on initial algebras as fixed points *)
 Local Lemma lambek (D : category)
   (F : D ⟶ D)
   (α : F ⟹ functor_identity _)
@@ -127,7 +136,7 @@ Proof.
   use (!nat_trans_ax α _ _ _).
 Qed.
 
-Section InitialModelsAsFixpoints.
+Section InitialModelsAsFixedPoints.
   Context {C : monoidal_cat}.
   Context (Σ : @module_signature_cat C).
   Context (Copr : BinCoproducts C).
@@ -423,9 +432,9 @@ Section InitialModelsAsFixpoints.
       := M'_mon ,, r_mon.
 
     Lemma iter_model_map_is_model_morphism
-      : r · f = pr1 (section_disp_on_morphisms (pr1 Σ) f_mon) · rM.
+      : is_model_of_signature_mor Σ r rM f_mon.
     Proof.
-      unfold r; rewrite <- assoc.
+      unfold is_model_of_signature_mor, r; rewrite <- assoc.
       use maponpaths.
       use f_inr.
     Qed.
@@ -539,7 +548,7 @@ Section InitialModelsAsFixpoints.
     Qed.
 
     Local Lemma h'_is_model_mor
-      : r M · h' = pr1 (section_disp_on_morphisms (pr1 Σ) h'_mon) · r N.
+      : is_model_of_signature_mor Σ (r M) (r N) h'_mon.
     Proof.
       unfold r; etrans; etrans; swap 3 4.
       + rewrite <- assoc; use maponpaths; [|use BinCoproductOfArrowsIn2].
@@ -646,14 +655,14 @@ Section InitialModelsAsFixpoints.
 
 
   (* If M is the initial model of Σ then I + Σ(M) is also initial
-     (and thus a fix-point by uniqueness of initial objects) *)
+     (and thus a fixed point by uniqueness of initial objects) *)
 
-  Proposition initial_model_fixpoint (HΣ : is_representable Σ)
+  Proposition initial_model_fixed_point (HΣ : is_representable Σ)
     : isInitial _ (iter_model (InitialObject HΣ)).
   Proof.
     use (lambek _ _ _ HΣ iter_model_functor_nat_commutes).
   Qed.
-End InitialModelsAsFixpoints.
+End InitialModelsAsFixedPoints.
 
 (**
    3. Total category of models and signatures
@@ -730,12 +739,14 @@ Section TotalCategoriesOfModels.
   Proof.
     split; intros; use tpair.
     - use identity.
-    - abstract (cbn; now rewrite id_left, id_right, @section_disp_id, id_left).
+    - cbn; unfold is_model_of_signature_mor; cbn.
+      abstract (cbn; now rewrite id_left, id_right, @section_disp_id, id_left).
     - cbn; induction X as [u _]; induction X0 as [v _]; use (u · v).
     - abstract (
         rename x into Σ, y into Σ', z into Σ'', X into u, X0 into v;
         induction xx as [R r]; induction yy as [R' r']; induction zz as [R'' r''];
         simpl; unfold mor_disp, total_category_of_modules_disp_cat_ob_mor;
+        simpl; unfold is_model_of_signature_mor;
         simpl; rewrite transportf_total2;
         simpl; rewrite transportf_const;
         simpl; rewrite @section_disp_comp, assoc, assoc, assoc; cbn;

@@ -4,7 +4,7 @@
 
    In this file, we define a functor from the category of signatures with a
    pointed tensorial strength to module signatures, and prove it maps simple
-   example of signatures with strength to the expected module signatures.
+   examples of signatures with strength to the expected module signatures.
    Finally, we show that models for the obtained module signatures are
    equivalent to Sigma monoids.
 
