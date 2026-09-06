@@ -581,9 +581,8 @@ Section InitialModelsAsFixedPoints.
   Proof.
     split.
     - intro M.
-
-      use invmap; [|use path_sigma_hprop|].
-      use homset_property.
+      use subtypePath.
+      { intro; use homset_property. }
       apply MON_mor_eq.
       symmetry; use BinCoproduct_endo_is_identity.
       + etrans; [use BinCoproductOfArrowsIn1|use id_left].
@@ -591,8 +590,8 @@ Section InitialModelsAsFixedPoints.
         rewrite <- id_left; use (maponpaths (λ x, x · _)).
         use (maponpaths pr1 (section_disp_id Σ _)).
     - intros M N P h g.
-      use invmap; [|use path_sigma_hprop|].
-      use homset_property.
+      use subtypePath.
+      { intro; use homset_property. }
       apply MON_mor_eq.
       symmetry; use BinCoproductArrowUnique.
       + cbn; rewrite id_left, assoc; etrans; [etrans|].
@@ -622,8 +621,8 @@ Section InitialModelsAsFixedPoints.
     : is_nat_trans _ _ iter_model_to_model_nat_trans_data.
   Proof.
     intros M N h.
-    use invmap; [|use path_sigma_hprop|].
-    { use homset_property. }
+    use subtypePath.
+    { intro; use homset_property. }
     apply MON_mor_eq.
     use f_nat.
   Qed.
@@ -639,8 +638,8 @@ Section InitialModelsAsFixedPoints.
     = post_whisker iter_model_to_model_nat_trans iter_model_functor.
   Proof.
     apply nat_trans_eq; [use homset_property|]; intro M.
-    use invmap; [|use path_sigma_hprop|].
-    { use homset_property. }
+    use subtypePath.
+    { intro; use homset_property. }
     apply MON_mor_eq.
     cbn.
     use BinCoproductArrowsEq; cbn.
@@ -716,8 +715,8 @@ Section TotalCategoriesOfModels.
     : is_functor (pullback_functor_data h).
   Proof.
     use make_is_functor; unfold functor_idax, functor_compax;
-      intros; (use invmap; [|use path_sigma_hprop|]);
-      now try use homset_property.
+    intros; (use subtypePath; [intro|]);
+    now try use homset_property.
   Qed.
 
 
@@ -777,7 +776,7 @@ Section TotalCategoriesOfModels.
       use isaset_total2; [|intros; use isasetaprop]; use homset_property.
     }
     all:
-      use invmap; [|use path_sigma_hprop|]; [use homset_property|];
+      use subtypePath; [intro; use homset_property|];
       apply MON_mor_eq;
       simpl; unfold transportb, mor_disp, total_category_of_models_disp_cat_ob_mor;
       simpl; rewrite transportf_total2;
@@ -936,8 +935,8 @@ Section Modularity.
     Proof.
       use invmap; [|use total2_paths_equiv|].
       use tpair.
-      2: {use invmap; [|use path_sigma_hprop|].
-          use homset_property.
+      2: {use subtypePath.
+          { intro; use homset_property. }
           simpl; rewrite transportf_total2;
             simpl; rewrite transportf_const;
             simpl; simpl in u.
@@ -961,7 +960,7 @@ Section Modularity.
 
     Lemma modularity_pushout_uniqueness : triplet' = triplet.
     Proof.
-      use invmap; [|use path_sigma_hprop|]; [use isapropdirprod|].
+      use subtypePath; [intro; use isapropdirprod|].
       + use (homset_property total_category_of_models _ _ _ f).
       + use (homset_property total_category_of_models _ _ _ g).
       + use modularity_induced_morphism_unique.

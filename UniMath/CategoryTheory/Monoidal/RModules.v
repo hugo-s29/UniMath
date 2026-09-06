@@ -587,7 +587,7 @@ Section RModules.
       Lemma colim_module_colimArrow_uniqueness
         : pair = (colim_module_colimArrow ,, colim_module_colimArrow_is_cocone_mor).
       Proof.
-        use invmap; [|use path_sigma_hprop|].
+        use subtypePath.
         use isaprop_is_cocone_mor.
         use colim_module_colimArrow_unique.
       Qed.
@@ -797,7 +797,7 @@ Section RModules.
       Lemma lim_module_limArrow_uniqueness
         : pair = (lim_module_limArrow ,, lim_module_limArrow_is_cone_mor).
       Proof.
-        use invmap; [|use path_sigma_hprop|].
+        use subtypePath.
         use isaprop_is_cone_mor.
         use lim_module_limArrow_unique.
       Qed.

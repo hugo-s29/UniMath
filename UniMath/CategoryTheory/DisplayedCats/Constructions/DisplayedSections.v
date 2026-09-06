@@ -283,8 +283,8 @@ Section Sections.
     )
     : F = F'.
   Proof.
-    use invmap; [|use path_sigma_hprop|].
-    use isaprop_section_disp_axioms; use homset_D.
+    use subtypePath.
+    { intro; use isaprop_section_disp_axioms; use homset_D. }
     use invmap; [|use total2_paths_equiv|]; use tpair.
     - use funextsec; exact equal_on_objects.
     - cbn; etrans.

@@ -299,8 +299,8 @@ Section StrengthToModuleSignature.
     - intro. use total2_paths_f.
       + use idpath.
       + abstract (
-          use invmap; [|use path_sigma_hprop|use id_left];
-          use isaprop_module_laws
+          use subtypePath;
+          [use isaprop_module_laws|use id_left]
         ).
     - intros; etrans.
       + refine (maponpaths _ _); use transportf_total2_paths_f.
@@ -316,7 +316,7 @@ Section StrengthToModuleSignature.
     - intro; use total2_paths_f.
       + use idpath.
       + abstract (
-        use invmap; [|use path_sigma_hprop|];
+        use subtypePath;
         [ use isaprop_module_laws
         | cbn; unfold product_module_subst; cbn; now rewrite (bifunctor_leftcomp Mon_V), assoc ]
           ).
@@ -372,12 +372,12 @@ Section StrengthToModuleSignature.
     Proof.
       split.
       - intro.
-        use invmap; [|use path_sigma_hprop|].
-        { use homset_property. }
+        use subtypePath.
+        { intro; use homset_property. }
         apply MON_mor_eq; easy.
       - intros ? ? ? ? ?.
-        use invmap; [|use path_sigma_hprop|].
-        { use homset_property. }
+        use subtypePath.
+        { intro; use homset_property. }
         apply MON_mor_eq; easy.
     Qed.
 
@@ -457,8 +457,8 @@ Section StrengthToModuleSignature.
       : is_nat_trans _ _ equivalence_models_sigma_monoids_adjuction_counit_data.
     Proof.
       intros ? ? ?.
-      use invmap; [|use path_sigma_hprop|].
-      { use homset_property. }
+      use subtypePath.
+      { intro; use homset_property. }
       apply MON_mor_eq.
       cbn; now rewrite id_left, id_right.
     Qed.
@@ -502,12 +502,12 @@ Section StrengthToModuleSignature.
             ).
         + abstract (use id_right).
         + abstract (now rewrite functor_id, id_left, id_right).
-        + use invmap; [|use path_sigma_hprop|].
-          { use homset_property. }
+        + use subtypePath.
+          { intro; use homset_property. }
           apply MON_mor_eq.
           use id_left.
-        + use invmap; [|use path_sigma_hprop|].
-          { use homset_property. }
+        + use subtypePath.
+          { intro; use homset_property. }
           apply MON_mor_eq.
           use id_left.
     Qed.

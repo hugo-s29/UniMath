@@ -666,8 +666,8 @@ Section InitialAlgebraToMHSS.
     Lemma SigmaMonoidFromInitialAlgebra_initiality_arrow_unique 
       : arrow' = SigmaMonoidFromInitialAlgebra_initiality_arrow.
     Proof.
-      use invmap; [|use path_sigma_hprop|].
-      - repeat use isapropdirprod.
+      use subtypePath.
+      - intro; repeat use isapropdirprod.
         + use homset_property.
         + use homset_property.
         + use homset_property.

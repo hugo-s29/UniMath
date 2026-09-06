@@ -104,8 +104,8 @@ Section SigmaMonoid.
   Lemma SigmaMonoid_mor_eq {σ σ' : SigmaMonoid} (r r' : SigmaMonoid⟦σ,σ'⟧) : pr1 r = pr1 r' -> r = r'.
   Proof.
     intro Hyp.
-    use invmap; [|use path_sigma_hprop| exact Hyp].
-    do 2 try use isapropdirprod.
+    use (subtypePath _ Hyp).
+    intro; do 2 try use isapropdirprod.
     - use homset_property.
     - use isaprop_is_monoid_mor.
     - use isapropunit.

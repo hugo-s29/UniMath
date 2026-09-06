@@ -443,7 +443,7 @@ Section CategoryOfSignaturesWithStrength.
             ).
       - abstract (
             intros ? ? ?;
-              use invmap; [|use path_sigma_hprop|];
+            use subtypePath;
             [ use isaprop_is_linear_nat_trans
             | apply nat_trans_eq; [use homset_property|]; intro; use limOutCommutes ]
           ).
@@ -480,8 +480,8 @@ Section CategoryOfSignaturesWithStrength.
         : is_cone_mor cc limit_signature_with_strength_cone limit_signature_with_strength_arrow.
       Proof.
         intro u.
-        use invmap; [|use path_sigma_hprop|].
-        { use isaprop_is_linear_nat_trans. }
+        use subtypePath.
+        { intro; use isaprop_is_linear_nat_trans. }
         apply nat_trans_eq; [use homset_property|]; intro A.
         use (limArrowCommutes (lims_g (diagram_pointwise F' _))).
       Qed.
@@ -500,7 +500,7 @@ Section CategoryOfSignaturesWithStrength.
       Lemma limit_signature_with_strength_arrow_unique
         : f = limit_signature_with_strength_arrow.
       Proof.
-        use invmap; [|use path_sigma_hprop|].
+        use subtypePath.
         { use isaprop_is_linear_nat_trans. }
         apply nat_trans_eq; [use homset_property|]; intro A; use limArrowUnique; intro u; cbn.
         exact (maponpaths (λ x, pr11 x A) (Hf u)).
@@ -509,7 +509,7 @@ Section CategoryOfSignaturesWithStrength.
       Lemma limit_signature_with_strength_arrow_unique_pair
         : f_Hf = (_ ,, limit_signature_with_strength_arrow_is_cone_mor).
       Proof.
-        use invmap; [|use path_sigma_hprop|].
+        use subtypePath.
         { use isaprop_is_cone_mor. }
         use limit_signature_with_strength_arrow_unique.
       Qed.
@@ -703,7 +703,7 @@ Section CategoryOfSignaturesWithStrength.
       : forms_cocone F colimit_signature_with_strength_in.
     Proof.
       intros u v e.
-      use invmap; [|use path_sigma_hprop|].
+      use subtypePath.
       { use isaprop_is_linear_nat_trans. }
       use (colimInCommutes colimit_sig_functor_cocone).
     Qed.
@@ -743,7 +743,7 @@ Section CategoryOfSignaturesWithStrength.
             colimit_signature_with_strength_arrow.
       Proof.
         intro u.
-        use invmap; [|use path_sigma_hprop|].
+        use subtypePath.
         { use isaprop_is_linear_nat_trans. }
         apply nat_trans_eq; [use homset_property|]; intro A.
         use (colimArrowCommutes (colims_g (diagram_pointwise F' _))).
@@ -763,7 +763,7 @@ Section CategoryOfSignaturesWithStrength.
       Lemma colimit_signature_with_strength_arrow_unique
         : f = colimit_signature_with_strength_arrow.
       Proof.
-        use invmap; [|use path_sigma_hprop|].
+        use subtypePath.
         { use isaprop_is_linear_nat_trans. }
         apply nat_trans_eq; [use homset_property|]; intro A; use colimArrowUnique; intro u; cbn.
         exact (maponpaths (λ x, pr11 x A) (Hf u)).
@@ -772,7 +772,7 @@ Section CategoryOfSignaturesWithStrength.
       Lemma colimit_signature_with_strength_arrow_unique_pair
         : f_Hf = (_ ,, colimit_signature_with_strength_arrow_is_cocone_mor).
       Proof.
-        use invmap; [|use path_sigma_hprop|].
+        use subtypePath.
         { use isaprop_is_cocone_mor. }
         use colimit_signature_with_strength_arrow_unique.
       Qed.

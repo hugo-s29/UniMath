@@ -119,10 +119,10 @@ End OnObjects.
   Proof.
     split.
     - intro M.
-      use invmap; [|use path_sigma_hprop|easy].
+      use subtypePath; [|easy].
       use isaprop_disp_Monad_Mor_laws.
     - intros M1 M2 M3 f g.
-      use invmap; [|use path_sigma_hprop|easy].
+      use subtypePath; [|easy].
       use isaprop_disp_Monad_Mor_laws.
   Qed.
 
@@ -197,7 +197,7 @@ Lemma monoid_to_monad_to_monoid
   : monad_to_monoid_CAT (monoid_to_monad_CAT M) = M.
 Proof.
   use (total2_paths2_f (idpath _)).
-  use invmap; [|use path_sigma_hprop|easy].
+  use subtypePath; [|easy].
   use isaprop_monoid_laws.
 Qed.
 
@@ -206,7 +206,7 @@ Lemma monad_to_monoid_to_monad
   : monoid_to_monad_CAT (monad_to_monoid_CAT M) = M.
 Proof.
   use (total2_paths2_f (idpath _)).
-  use invmap; [|use path_sigma_hprop|easy].
+  use subtypePath; [|easy].
   use isaprop_disp_Monad_laws.
 Qed.
 
@@ -270,7 +270,8 @@ Proof.
       exact (monads_category_id_subproof _ (pr22 M)).
     }
 
-    all: use invmap; [|use path_sigma_hprop|]; [use isaprop_disp_Monad_Mor_laws|];
+    all: use subtypePath;
+      [use isaprop_disp_Monad_Mor_laws|];
       apply nat_trans_eq; [use homset_property |]; intro A; cbn;
       do 2 (unfold nat_id_monoid_to_monad_to_monoid_data, transportb; rewrite transportf_total2; cbn);
       induction monad_to_monoid_to_monad; cbn; use id_left.

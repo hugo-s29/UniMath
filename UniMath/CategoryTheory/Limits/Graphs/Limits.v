@@ -1277,7 +1277,7 @@ Section LimitsOfProductGraphs.
       Lemma limits_commute_arrow_unique_pair 
         : pair = (limits_commute_arrow ,, limits_commute_arrow_is_cone_mor).
       Proof.
-        use invmap; [|use path_sigma_hprop|].
+        use subtypePath.
         use isaprop_is_cone_mor.
         use limits_commute_arrow_unique.
       Qed.
