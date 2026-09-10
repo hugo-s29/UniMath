@@ -18,8 +18,10 @@
 Require Import UniMath.Foundations.Sets.
 Require Import UniMath.MoreFoundations.All.
 Require Import UniMath.CategoryTheory.Core.Categories.
+Require Import UniMath.CategoryTheory.Core.Isos.
 
 Require Import UniMath.CategoryTheory.DisplayedCats.Core.
+Require Import UniMath.CategoryTheory.DisplayedCats.Fiber.
 
 Local Open Scope cat.
 Local Open Scope mor_disp_scope.
@@ -305,6 +307,53 @@ Section Sections.
       { use (!helper_A _ _ (equal_on_objects A) _). }
       use maponpaths; use (!helper_A _ _ (equal_on_objects A') _).
   Qed.
+
+
+  Section SectionIsos.
+    Context (F F' : section_disp_cat).
+    Context (iso : z_iso F F').
+    Context (x : C).
+
+    Let Fx : D[{x}] := pr1 F x.
+    Let F'x : D[{x}] := pr1 F' x.
+
+    Let from : F --> F' := z_iso_mor iso.
+    Let to : F' --> F := inv_from_z_iso iso.
+
+    Definition section_disp_iso_pointwise_from
+      : Fx -->[ identity x] F'x
+      := pr1 from x.
+
+    Definition section_disp_iso_pointwise_to
+      : F'x -->[ identity x] Fx
+      := pr1 to x.
+
+    Lemma section_disp_iso_pointwise_inverse
+      : is_inverse_in_precat (C := D[{x}])
+          section_disp_iso_pointwise_from 
+          section_disp_iso_pointwise_to.
+    Proof.
+      split.
+      - refine (_ @ maponpaths (λ f, pr1 f x) (z_iso_inv_after_z_iso iso)).
+        cbn.
+        assert (id_right (identity x) = id_left (identity x)) as H
+        by (use proofirrelevance; use homset_property).
+        now rewrite H.
+      - refine (_ @ maponpaths (λ f, pr1 f x) (z_iso_after_z_iso_inv iso)).
+        cbn.
+        assert (id_right (identity x) = id_left (identity x)) as H
+        by (use proofirrelevance; use homset_property).
+        now rewrite H.
+    Qed.
+
+    Theorem section_disp_iso_pointwise : z_iso Fx F'x.
+    Proof.
+      use make_z_iso.
+      - exact section_disp_iso_pointwise_from.
+      - exact section_disp_iso_pointwise_to.
+      - exact section_disp_iso_pointwise_inverse.
+    Defined.
+  End SectionIsos.
 End Sections.
 
 Arguments section_disp_data {C} D.

@@ -21,6 +21,7 @@ Require Import UniMath.MoreFoundations.All.
 
 Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
+Require Import UniMath.CategoryTheory.Core.Isos.
 
 Require Import UniMath.CategoryTheory.Limits.Graphs.Limits.
 Require Import UniMath.CategoryTheory.Limits.Graphs.Colimits.
@@ -834,4 +835,37 @@ Section ModuleSignatures.
     intro; now use limit_module_signature_LimCone.
   Defined.
 
+
+
+  Theorem module_signature_iso_pointwise 
+    (Σ Σ': module_signature_cat)
+    (iso : z_iso Σ Σ') (R : MON C)
+    : z_iso (Σ R) (Σ' R).
+  Proof.
+    eassert _ by exact (section_disp_iso_pointwise _ _ iso R).
+    use make_z_iso.
+    - induction (z_iso_mor X) as [from from_hyp].
+      exists from; cbn in from_hyp |- *.
+      unfold is_module_mor in *; cbn in from_hyp |- *.
+      abstract (now rewrite tensor_mor_left, tensor_id_id, id_left in from_hyp).
+    - induction (inv_from_z_iso X) as [to to_hyp].
+      exists to; cbn in to_hyp |- *.
+      unfold is_module_mor in *; cbn in to_hyp |- *.
+      abstract (now rewrite tensor_mor_left, tensor_id_id, id_left in to_hyp).
+    - cbn; split; cbn.
+      + abstract (
+          use MOD_mor_eq;
+          refine (_ @ maponpaths pr1 (z_iso_inv_after_z_iso X)); cbn;
+          unfold mor_disp; cbn;
+          rewrite transportf_total2; cbn;
+          now rewrite transportf_const
+        ).
+      + abstract (
+          use MOD_mor_eq;
+          refine (_ @ maponpaths pr1 (z_iso_after_z_iso_inv X)); cbn;
+          unfold mor_disp; cbn;
+          rewrite transportf_total2; cbn;
+          now rewrite transportf_const
+        ).
+  Defined.
 End ModuleSignatures.
