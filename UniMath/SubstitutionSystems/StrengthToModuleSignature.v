@@ -22,6 +22,7 @@ Require Import UniMath.MoreFoundations.All.
 
 Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
+Require Import UniMath.CategoryTheory.Core.Isos.
 Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
 Require Import UniMath.CategoryTheory.Adjunctions.Core.
 Require Import UniMath.CategoryTheory.Equivalences.Core.
@@ -33,10 +34,14 @@ Require Import UniMath.CategoryTheory.Monoidal.WhiskeredBifunctors.
 Require Import UniMath.CategoryTheory.Monoidal.Categories.
 Require Import UniMath.CategoryTheory.Monoidal.CategoriesOfMonoids.
 Require Import UniMath.CategoryTheory.Monoidal.Examples.MonoidalPointedObjects.
+Require Import UniMath.CategoryTheory.Monoidal.Examples.CartesianMonoidal.
 Require Import UniMath.CategoryTheory.Monoidal.RModules.
 Require Import UniMath.CategoryTheory.Monoidal.TotalCategoriesOfRModules.
 Require Import UniMath.CategoryTheory.Monoidal.ModuleSignatures.
 Require Import UniMath.CategoryTheory.Monoidal.ModelsOfModuleSignature.
+
+Require Import UniMath.CategoryTheory.Categories.HSET.Core.
+Require Import UniMath.CategoryTheory.Categories.HSET.MonoEpiIso.
 
 Require Import UniMath.CategoryTheory.Actegories.ConstructionOfActegories.
 Require Import UniMath.CategoryTheory.Actegories.MorphismsOfActegories.
@@ -527,3 +532,233 @@ Section StrengthToModuleSignature.
     Defined.
   End ModelsAreSigmaMonoids.
 End StrengthToModuleSignature.
+
+Section StrengthToModuleSignatureNotEssentiallySurjective.
+  Let V : category := SET.
+  Let Mon_V : monoidal V := SET_cartesian_monoidal.
+
+  Let V_Mon : monoidal_cat := V ,, Mon_V.
+
+  Local Definition two : V := (bool ,, isasetbool).
+
+  Local Definition monoid_plus_monoid : monoid Mon_V two.
+  Proof.
+    use make_monoid; cbn.
+    - intros h; induction h as [a b]; induction a, b.
+      + exact false.
+      + exact true.
+      + exact true.
+      + exact false.
+    - intro; exact false.
+    - abstract (use funextsec; intros (? , a); induction a; reflexivity).
+    - abstract (use funextsec; intros (a , ?); induction a; reflexivity).
+    - abstract (use funextsec; intros ((a, b), c); induction a, b, c; reflexivity).
+  Defined.
+
+  Local Definition monoid_plus : MON V_Mon := _ ,, monoid_plus_monoid.
+
+  Local Definition monoid_times_monoid : monoid Mon_V two.
+  Proof.
+    use make_monoid; cbn.
+    - intros h; induction h as [a b]; induction a, b.
+      + exact true.
+      + exact false.
+      + exact false.
+      + exact false.
+    - intro; exact true.
+    - abstract (use funextsec; intros (? , a); induction a; reflexivity).
+    - abstract (use funextsec; intros (a , ?); induction a; reflexivity).
+    - abstract (use funextsec; intros ((a, b), c); induction a, b, c; reflexivity).
+  Defined.
+
+  Local Definition monoid_times : MON V_Mon := _ ,, monoid_times_monoid.
+
+  Local Definition signature_data
+    : section_disp_data (@total_category_of_modules_disp_cat V_Mon).
+  Proof.
+    use tpair.
+    - intro X; use tpair; cbn.
+      + exists (monoid_times --> X).
+        abstract (
+          use isaset_total2;
+          [use isaset_set_fun_space
+          |intro; use isasetaprop; use isaprop_is_monoid_mor]
+        ).
+      + exists pr1; abstract (do 2 split).
+    - intros X Y f; cbn; use tpair.
+      + intro u;
+        change (MON V_Mon ⟦ monoid_times, X⟧) in u.
+        use (u · f).
+      + reflexivity.
+  Defined.
+
+  Local Lemma signature_law
+    : section_disp_axioms signature_data.
+  Proof.
+    split.
+    - intro X; cbn.
+      use subtypePath.
+      { intro; use isaprop_is_module_mor. }
+      cbn; use funextsec; intros [x y].
+      use subtypePath.
+      { intro; use isaprop_is_monoid_mor. }
+      reflexivity.
+    - intros X Y Z f f'; cbn.
+      use subtypePath.
+      { intro; use isaprop_is_module_mor. }
+      cbn; use funextsec; intros [x y].
+      use subtypePath.
+      { intro; use isaprop_is_monoid_mor. }
+      reflexivity.
+  Qed.
+
+
+  Local Definition signature : @module_signature_cat V_Mon.
+  Proof.
+    exists signature_data.
+    exact signature_law.
+  Defined.
+
+  Section IfItWasIso.
+    Context (hyp : ∑ (Hθ : pointedtensorialstrength_cat (Mon_V_swapped Mon_V)),
+       z_iso (strength_to_module_signature_functor Mon_V Hθ) signature).
+
+    Let H : V ⟶ V := pr11 hyp.
+    Let Hθ := pr1 hyp.
+    Let hyp_iso : z_iso (strength_to_module_signature_functor Mon_V Hθ) signature
+      := pr2 hyp.
+
+    Local Lemma monoid_times_iso 
+      : z_iso (strength_to_module_signature_functor Mon_V Hθ monoid_times) (signature monoid_times).
+    Proof.
+      now use module_signature_iso_pointwise.
+    Defined.
+
+    Local Lemma monoid_plus_iso 
+      : z_iso (strength_to_module_signature_functor Mon_V Hθ monoid_plus) (signature monoid_plus).
+    Proof.
+      now use module_signature_iso_pointwise.
+    Defined.
+     
+    Let A_Set : SET := pr1 (signature monoid_times).
+    Let B_Set : SET := pr1 (signature monoid_plus).
+
+    Let A : UU := pr1 A_Set.
+    Let B : UU := pr1 B_Set.
+
+    Opaque A_Set B_Set.
+
+    Local Lemma signature_image_iso
+      : z_iso A_Set B_Set.
+    Proof.
+      use z_iso_comp.
+      - use (H two).
+      - use z_iso_inv.
+        exact (functor_on_z_iso (forgetful _ _) monoid_times_iso).
+      - exact (functor_on_z_iso (forgetful _ _) monoid_plus_iso).
+    Defined.
+
+    Local Lemma equivAB : A ≃ B.
+    Proof.
+      use hset_z_iso_equiv.
+      use signature_image_iso.
+    Defined.
+
+    Local Definition f00 := λ _: bool, false.
+    Local Definition f11 := λ _: bool, true.
+    Local Definition f01 := λ b: bool, bool_rect (λ _, bool) false true b.
+    Local Definition f10 := λ b: bool, bool_rect (λ _, bool) true false b.
+
+    Local Lemma boolToBool_eq (f : bool -> bool)
+      : (f = f00) ⨿ (f = f01) ⨿ (f = f10) ⨿ (f = f11).
+    Proof.
+      assert (∏ x, (f x = true) ⨿ (f x = false)) as f_eq.
+      { intro x; induction (f x); [left|right]; reflexivity. }
+      induction (f_eq true), (f_eq false).
+      - do 0 left; try right; use funextsec; intro u; induction u; assumption.
+      - do 1 left; try right; use funextsec; intro u; induction u; assumption.
+      - do 2 left; try right; use funextsec; intro u; induction u; assumption.
+      - do 3 left; try right; use funextsec; intro u; induction u; assumption.
+    Defined.
+
+    Local Lemma times_to_times
+      (f : bool -> bool)
+      (f_hyp : is_monoid_mor Mon_V monoid_times_monoid monoid_times_monoid f)
+      : (f = f11) ⨿ (f = f10).
+    Proof.
+      induction (boolToBool_eq f) as [[[h | h] | h] | h]; rewrite h in f_hyp.
+      3: { right; assumption. }
+      3: { left; assumption. }
+      all: use fromempty; use nopathsfalsetotrue;
+           exact (maponpaths (λ u, u tt) (pr2 f_hyp)).
+    Defined.
+
+    Local Lemma times_to_plus
+      (f : bool -> bool)
+      (f_hyp : is_monoid_mor Mon_V monoid_times_monoid monoid_plus_monoid f)
+      : f = f00.
+    Proof.
+      induction (boolToBool_eq f) as [[[h | h] | h] | h]; rewrite h in f_hyp.
+      - assumption. 
+      - use fromempty; use nopathsfalsetotrue.
+        exact (maponpaths (λ u, u (false ,, false)) (pr1 f_hyp)).
+      - use fromempty; use nopathstruetofalse.
+        exact (maponpaths (λ u, u (true ,, false)) (pr1 f_hyp)).
+      - use fromempty; use nopathsfalsetotrue.
+        exact (maponpaths (λ u, u (true ,, false)) (pr1 f_hyp)).
+    Defined.
+
+    Local Lemma equiv2A : bool ≃ A.
+    Proof.
+      use weq_iso.
+      - intro b; induction b; cbn.
+        + exists (λ x, true); abstract (do 2 split).
+        + exists (λ x, x); abstract (do 2 split).
+      - intros (f , f_hyp).
+        apply (coprodtobool (times_to_times _ f_hyp)).
+      - intro b; induction b; reflexivity.
+      - intros (f , f_hyp).
+        use subtypePath.
+        { intro; use isaprop_is_monoid_mor. }
+        induction (times_to_times f f_hyp) as [h | h]; cbn; rewrite h;
+        use funextsec; intro b; now induction b.
+    Defined.
+
+    Local Lemma equivB1 : B ≃ unit.
+    Proof.
+      use weq_iso.
+      - exact tounit.
+      - intro u; clear u; exists (λ _, false); split; split.
+      - intros (f , f_hyp); cbn.
+        use subtypePath.
+        { intro; use isaprop_is_monoid_mor. }
+        cbn; now rewrite (times_to_plus f f_hyp).
+      - intro y; now induction y.
+    Defined.
+
+
+    Local Lemma equiv21 : bool ≃ unit.
+    Proof.
+      refine (weqcomp equiv2A (weqcomp equivAB equivB1)).
+    Defined.
+
+    Local Lemma contradiction 
+      : empty.
+    Proof.
+      assert (iscontr bool) by (use iscontrifweqtounit; use equiv21).
+      induction X as [b p].
+      specialize (p (negb b)).
+      induction b; now use nopathsfalsetotrue.
+    Qed.
+
+  End IfItWasIso.
+
+  Theorem strength_to_module_not_essentially_surjective
+    : ¬ essentially_surjective (strength_to_module_signature_functor Mon_V).
+  Proof.
+    intro; eapply factor_through_squash.
+    - use isapropempty.
+    - use contradiction.
+    -use (X signature).
+  Qed.
+End StrengthToModuleSignatureNotEssentiallySurjective.
