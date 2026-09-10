@@ -487,11 +487,351 @@ Section ModuleSignatures.
     Defined.
   End Colimits.
 
-  Theorem module_signature_inherits_limits (g : graph) (_ : Colims_of_shape g C)
+  Theorem module_signature_inherits_colimits (g : graph) (_ : Colims_of_shape g C)
     (_ : ∏ R : MON C, preserves_colimits_of_shape (rightwhiskering_functor C (pr1 R)) g)
     : Colims_of_shape g module_signature_cat.
   Proof.
     intro; now use colimit_module_signature_ColimCocone.
+  Defined.
+
+  Section Limits.
+    Context {g : graph}.
+    Context (d : diagram g module_signature_cat).
+    Context (lims_g : Lims_of_shape g C).
+
+    Let Σ v : module_signature_data := dob d v.
+
+    Definition limit_module_signature_diagram (R : MON C) 
+      : diagram g (MOD (pr1 R) (pr2 R))
+      := mapdiagram (signature_evaluation R) d.
+
+    Definition limit_module_signature_limcone (R : MON C)
+      : LimCone (limit_module_signature_diagram R)
+      := MOD_inherits_limits _ _ _ lims_g (limit_module_signature_diagram R).
+
+    Definition limit_module_signature_objects (R : MON C)
+      : MOD (pr1 R) (pr2 R)
+      := lim (limit_module_signature_limcone R).
+
+    Let L R := limit_module_signature_objects R.
+
+    Let diagram_in_C R := mapdiagram (forgetful (pr1 R) (pr2 R)) (limit_module_signature_diagram R).
+
+    Lemma limit_module_signature_morphisms_data 
+      (R R' : MON C) (f : R --> R')
+      : C ⟦ lim (lims_g (diagram_in_C R)), lim (lims_g (diagram_in_C R'))⟧.
+    Proof.
+      use limOfArrows; cbn.
+      - intro u; exact (pr1 (section_disp_on_morphisms (Σ u) f)).
+      - abstract (
+          intros u v e; cbn;
+          etrans; [|use (maponpaths pr1 (pr2 (dmor d e) _ _ f))];
+          unfold mor_disp; cbn;
+          rewrite transportf_total2; cbn;
+          now rewrite transportf_const
+        ).
+    Defined.
+
+    Lemma limit_module_signature_morphisms_is_module_mor
+      (R R' : MON C) (f : R --> R')
+      : is_module_mor _ _
+          (lim_module _ _ lims_g _)
+          (pullback_functor_funct _ (lim_module _ _ lims_g _) _ (pr2 f))
+          (limit_module_signature_morphisms_data R R' f).
+    Proof.
+      unfold is_module_mor; cbn.
+      transparent assert (cc : (cone (diagram_in_C R') (lim (lims_g (diagram_in_C R)) ⊗ pr1 R))).
+      { use make_cone.
+        - intro u; cbn.
+          refine (_ · _ · _); swap 1 3.
+          + exact (pr1 (section_disp_on_morphisms (Σ u) f)).
+          + exact (limOut (lims_g (diagram_in_C R)) u).
+          + exact (pr12 (limit_module_signature_objects R)).
+        - abstract  (
+            intros u v e; cbn;
+            do 3 rewrite <- assoc; apply cancel_precomposition;
+            rewrite <- (limOutCommutes _ _ _ e), <- assoc; apply cancel_precomposition;
+            etrans; [| apply (maponpaths pr1 (pr2 (dmor d e) _ _ f))];
+            unfold mor_disp; simpl;
+            rewrite transportf_total2; cbn;
+            now rewrite transportf_const
+          ). }
+      etrans; [|symmetry].
+      - use (limArrowUnique _ _ cc).
+        intro; unfold limit_module_signature_morphisms_data, lim_module_subst; cbn.
+        rewrite assoc; etrans.
+        { do 2 rewrite <- assoc.
+          do 2 apply cancel_precomposition.
+          use (limArrowCommutes (lims_g (diagram_in_C R'))). }
+        cbn; do 2 rewrite assoc.
+        etrans.
+        { apply cancel_postcomposition.
+          rewrite <- assoc.
+          apply cancel_precomposition.
+          symmetry; apply (bifunctor_equalwhiskers C). }
+        unfold functoronmorphisms1; rewrite assoc.
+        etrans.
+        { do 2 apply cancel_postcomposition.
+          rewrite <- (bifunctor_rightcomp C).
+          apply maponpaths.
+          use (limOfArrowsOut _ _ (lims_g (diagram_in_C R)) (lims_g (diagram_in_C R'))). }
+        cbn. rewrite (bifunctor_rightcomp C).
+        symmetry; etrans.
+        { apply cancel_postcomposition; unfold lim_module_subst; cbn.
+          use (limArrowCommutes (lims_g (diagram_in_C R))). }
+        cbn.
+        do 3 rewrite <- assoc; use cancel_precomposition.
+        refine (!pr2 (section_disp_on_morphisms (Σ u) f)).
+      - use (limArrowUnique _ _ cc).
+        intro u; cbn.
+        do 2 rewrite <- assoc; use cancel_precomposition.
+        use (limOfArrowsOut _ _ (lims_g (diagram_in_C R)) (lims_g (diagram_in_C R'))).
+    Qed.
+
+    Definition limit_module_signature_morphisms
+      (R R' : MON C) (f : R --> R')
+      : total_category_of_modules⟦(R ,, L R) , (R' ,, L R')⟧.
+    Proof.
+      exists f; exists (limit_module_signature_morphisms_data _ _ f).
+      apply limit_module_signature_morphisms_is_module_mor.
+    Defined.
+
+    Definition limit_module_signature_data : module_signature_data.
+    Proof.
+      use tpair.
+      - exact limit_module_signature_objects.
+      - intros R R' f; apply limit_module_signature_morphisms.
+    Defined.
+
+    Lemma limit_module_signature_axioms
+      : section_disp_axioms limit_module_signature_data.
+    Proof.
+      split.
+      - intro R; cbn.
+        use subtypePath.
+        { intro; use isaprop_is_module_mor. }
+        cbn; symmetry; use lim_endo_is_identity.
+        intro u; cbn.
+        unfold limit_module_signature_morphisms_data.
+        etrans.
+        { use (limOfArrowsOut _ _ (lims_g (diagram_in_C R)) (lims_g (diagram_in_C R))). }
+        cbn.
+        rewrite <- id_right; use cancel_precomposition.
+        use (maponpaths pr1 (section_disp_id (dob d u) R)).
+      - intros R R' R'' f f'; cbn.
+        use subtypePath.
+        { intro; use isaprop_is_module_mor. }
+        cbn; unfold limit_module_signature_morphisms_data, limOfArrows.
+        symmetry; use limArrowUnique; cbn.
+        intro u.
+        etrans.
+        { rewrite <- assoc; apply cancel_precomposition.
+          use (limArrowCommutes (lims_g (diagram_in_C R''))). }
+        cbn; rewrite assoc.
+        etrans.
+        { apply cancel_postcomposition.
+          use (limArrowCommutes (lims_g (diagram_in_C R'))). }
+        cbn.
+        rewrite <- assoc; use cancel_precomposition.
+        use (!maponpaths pr1 (section_disp_comp (dob d u) _ _ _ f f')).
+    Qed.
+
+    Definition limit_module_signature : module_signature_cat
+      := limit_module_signature_data ,,
+         limit_module_signature_axioms.
+
+    Definition limit_module_signature_cone
+      : cone d limit_module_signature.
+    Proof.
+      use make_cone.
+      - intro v; use tpair.
+        + intro R; simpl.
+          exists (pr1 (limOut (limit_module_signature_limcone R) v)).
+          abstract (
+            unfold is_module_mor; cbn;
+            rewrite tensor_mor_left, tensor_id_id, id_left;
+            cbn; unfold lim_module_subst; cbn;
+            symmetry; use (limArrowCommutes (lims_g (diagram_in_C R)))
+          ).
+        + abstract (
+            intros R R' f; cbn;
+            use subtypePath; [intro; use isaprop_is_module_mor|];
+            unfold mor_disp; cbn;
+            rewrite transportf_total2; cbn;
+            rewrite transportf_const; cbn;
+            use (limOfArrowsOut _ _ (lims_g (diagram_in_C R)) (lims_g (diagram_in_C R')))
+          ).
+      - abstract (
+          intros u v e; cbn;
+          use subtypePath;
+          [intro; use isaprop_section_nat_trans_disp_axioms|];
+          cbn; use funextsec; intro R;
+          unfold mor_disp; cbn;
+          use subtypePath;
+          [intro; use isaprop_is_module_mor|];
+          rewrite transportf_total2; cbn;
+          rewrite transportf_const; cbn;
+          use (maponpaths pr1 (limOutCommutes (limit_module_signature_limcone R) _ _ e))
+        ).
+    Defined.
+
+    Section FixACone.
+      Context (Σ' : module_signature_cat) (cc : cone d Σ').
+
+      Let cc' R := mapcone (signature_evaluation R) _ cc.
+
+      Lemma limit_module_signature_arrow_is_module_mor (R : MON C)
+        : is_module_mor _ _ (pr2 (Σ' R))
+            (pullback_functor_funct _ (lim_module _ _ lims_g _) _ (id_disp (pr2 R)))
+            (pr1 (limArrow (limit_module_signature_limcone R) _ (cc' R))).
+      Proof.
+        unfold is_module_mor; cbn.
+        rewrite tensor_mor_left, tensor_id_id, id_left.
+        transparent assert (c : (cone (diagram_in_C R) (pr1 (Σ' R) ⊗ pr1 R))).
+        {
+          use make_cone.
+          - intro v; exact (pr12 (Σ' R) · pr1 (pr1 (coneOut cc v) R)).
+          - abstract (
+              intros u v e; rewrite <- assoc; use cancel_precomposition;
+              refine (_ @ maponpaths (λ x, pr1 (pr1 x R)) (coneOutCommutes cc _ _ e)); cbn;
+              unfold mor_disp; cbn;
+              rewrite transportf_total2; cbn; now rewrite transportf_const
+            ).
+        }
+
+        etrans; [|symmetry]; use (limArrowUnique _ _ c); intro u; cbn.
+
+        { unfold lim_module_subst; etrans; cbn.
+          { rewrite <- assoc; apply cancel_precomposition.
+            use (limArrowCommutes (lims_g (diagram_in_C R))). }
+          cbn.
+          rewrite assoc, <- (bifunctor_rightcomp C).
+          etrans.
+          { apply cancel_postcomposition; apply maponpaths.
+            use (limArrowCommutes (lims_g (diagram_in_C R))). }
+          cbn.
+          refine (_ @ pr2 (pr1 (coneOut cc u) R)).
+          cbn.
+          now rewrite tensor_mor_left, tensor_id_id, id_left. }
+
+        { rewrite <- assoc; apply cancel_precomposition.
+          use (limArrowCommutes (lims_g (diagram_in_C R))). }
+      Qed.
+
+      Definition limit_module_signature_arrow_data
+        : section_nat_trans_disp_data Σ' limit_module_signature .
+      Proof.
+        intro R; eexists; use limit_module_signature_arrow_is_module_mor.
+      Defined.
+
+      Lemma limit_module_signature_arrow_nat
+        : section_nat_trans_disp_axioms limit_module_signature_arrow_data.
+      Proof.
+        intros R R' f; cbn.
+        use subtypePath.
+        { intro; use isaprop_is_module_mor. }
+        unfold mor_disp; cbn.
+        rewrite transportf_total2; cbn.
+        rewrite transportf_const; cbn.
+
+        transparent assert (c : (cone (diagram_in_C R') (pr1 (Σ' R)))).
+        { use make_cone.
+          - intro v; exact (pr1 (section_disp_on_morphisms (pr1 Σ') f) · pr1 (pr1 (coneOut cc v) R')).
+          - abstract (
+              intros u v e; rewrite <- assoc; use cancel_precomposition; cbn;
+              refine (_ @ maponpaths (λ x, pr1 (pr1 x R')) (coneOutCommutes cc _ _ e));
+              cbn; unfold mor_disp; cbn;
+              rewrite transportf_total2; cbn;
+              now rewrite transportf_const
+            ). }
+
+        etrans.
+        { use (limArrowUnique _ _ c); intro u; cbn.
+          rewrite <- assoc; apply cancel_precomposition. 
+          use (limArrowCommutes (lims_g (diagram_in_C R'))). }
+
+        symmetry; use (limArrowUnique _ _ c); intro u; cbn.
+        unfold limit_module_signature_morphisms_data.
+        etrans.
+        { rewrite <- assoc.
+          apply cancel_precomposition.
+          apply (limOfArrowsOut _ _ (lims_g (diagram_in_C R)) (lims_g (diagram_in_C R'))). }
+        rewrite assoc; cbn; etrans.
+        { apply cancel_postcomposition.
+          apply (limArrowCommutes (lims_g (diagram_in_C R))). }
+        refine (!maponpaths pr1 (pr2 (coneOut cc u) _ _ f) @ _); cbn.
+        unfold mor_disp; cbn.
+        rewrite transportf_total2; cbn.
+        now rewrite transportf_const.
+      Qed.
+
+      Definition limit_module_signature_arrow 
+        : module_signature_cat ⟦ Σ', limit_module_signature ⟧.
+      Proof.
+        exists limit_module_signature_arrow_data.
+        use limit_module_signature_arrow_nat.
+      Defined.
+
+      Lemma limit_module_signature_arrow_is_cone_mor
+        : is_cone_mor cc limit_module_signature_cone limit_module_signature_arrow.
+      Proof.
+        intro; cbn.
+        use subtypePath.
+        { intro; use isaprop_section_nat_trans_disp_axioms. }
+        cbn; use funextsec; intro R.
+        use subtypePath.
+        { intro; use isaprop_is_module_mor. }
+        unfold mor_disp; cbn.
+        rewrite transportf_total2; cbn.
+        rewrite transportf_const; cbn.
+        use (limArrowCommutes (lims_g (mapdiagram (forgetful _ _) (limit_module_signature_diagram R)))).
+      Qed.
+
+      Context (pair : ∑ (γ : module_signature_cat ⟦ Σ', limit_module_signature ⟧),
+        is_cone_mor cc limit_module_signature_cone γ).
+
+      Let γ : module_signature_cat ⟦ Σ', limit_module_signature ⟧ := pr1 pair.
+      Let γ_hyp : is_cone_mor cc limit_module_signature_cone γ := pr2 pair.
+
+      Lemma limit_module_signature_arrow_unique
+        : γ = limit_module_signature_arrow.
+      Proof.
+        use subtypePath.
+        { intro; use isaprop_section_nat_trans_disp_axioms. }
+        use funextsec; intro R; cbn.
+        unfold limit_module_signature_arrow_data; cbn.
+        use subtypePath.
+        { intro; use isaprop_is_module_mor. }
+        cbn.
+        use limArrowUnique; intro u; cbn.
+        rewrite <- γ_hyp; cbn.
+        unfold mor_disp; cbn.
+        rewrite transportf_total2; cbn.
+        now rewrite transportf_const.
+      Qed.
+
+      Lemma limit_module_signature_arrow_unique_pair
+        : pair = limit_module_signature_arrow ,, limit_module_signature_arrow_is_cone_mor.
+      Proof.
+        use subtypePath.
+        - intro; use isaprop_is_cone_mor.
+        - use limit_module_signature_arrow_unique.
+      Qed.
+    End FixACone.
+
+    Definition limit_module_signature_LimCone : LimCone d.
+    Proof.
+      use make_LimCone.
+      - exact limit_module_signature.
+      - exact limit_module_signature_cone.
+      - intros ? ?; eexists; use limit_module_signature_arrow_unique_pair.
+    Defined.
+  End Limits.
+
+  Theorem module_signature_inherits_limits (g : graph) (_ : Lims_of_shape g C)
+    : Lims_of_shape g module_signature_cat.
+  Proof.
+    intro; now use limit_module_signature_LimCone.
   Defined.
 
 End ModuleSignatures.
