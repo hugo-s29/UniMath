@@ -511,6 +511,7 @@ Monoidal/Examples/CartesianMonoidal.v
 Monoidal/Examples/DisplayedCartesianMonoidal.v
 Monoidal/Examples/StructuresMonoidal.v
 Monoidal/Examples/EndofunctorsMonoidalElementary.v
+Monoidal/Examples/ModuleSignatureNotRepresentable.v
 Monoidal/Examples/MonadsAsMonoidsElementary.v
 Monoidal/Examples/MonoidalPointedObjects.v
 Monoidal/Displayed/MonoidalFunctorLifting.v

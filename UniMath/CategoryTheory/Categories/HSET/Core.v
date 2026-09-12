@@ -23,6 +23,7 @@ Require Import UniMath.Foundations.UnivalenceAxiom.
 Require Import UniMath.Foundations.NaturalNumbers.
 Require Import UniMath.Foundations.HLevels.
 Require Import UniMath.MoreFoundations.PartA.
+Require Import UniMath.MoreFoundations.Subtypes.
 
 Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
@@ -83,6 +84,33 @@ Definition unitHSET : HSET
 
 Definition natHSET : HSET
   := natset.
+
+Definition powerset_functor_data 
+  : functor_data SET SET.
+Proof.
+  use make_functor_data.
+  - intro X; exact (subtype_set (pr1 X)).
+  - intros X Y f u; exact (image_hsubtype u f).
+Defined.
+
+Lemma powerset_functor_axioms
+  : is_functor powerset_functor_data.
+Proof.
+  split.
+  - intro X; cbn.
+    use funextsec; intro u.
+    use image_hsubtype_id.
+  - intros X Y Z f g; cbn.
+    use funextsec; intro u.
+    use image_hsubtype_comp.
+Qed.
+
+Definition powerset_functor : SET ⟶  SET.
+Proof.
+  use make_functor.
+  - exact powerset_functor_data.
+  - exact powerset_functor_axioms.
+Defined.
 
 (*Definition of HomFunctor for categories, analagous definition for precategories is in ../Type/Core*)
 Section HomSetFunctors.
