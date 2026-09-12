@@ -45,6 +45,23 @@ Definition subtype_notEqual {X:UU} (S T : hsubtype X) : hProp := (S ⊈ T) ∨ (
 
 Notation " S ≢ T " := (subtype_notEqual S T) (at level 70) : subtype.
 
+Lemma cantor_no_surjection_powerset (X : UU) (f : X → subtype_set X)
+  : ¬ issurjective f.
+Proof.
+  intros f_hyp.
+  pose (g := (λ x, ¬ f x x) : hsubtype X).
+  use (factor_through_squash _ _ (f_hyp g)).
+  { use isapropempty. }
+  intros (x , x_hyp).
+  assert (f x x = ¬ f x x) as H by (exact (maponpaths (λ h, h x) x_hyp)).
+  assert (f x x ≃ ¬ f x x) as H' by exact (eqweqmap (maponpaths pr1 H)).
+  assert (f x x <-> ¬ f x x) as H'' by exact (weq_to_iff H').
+  destruct H'' as [trueToFalse falseToTrue].
+  assert (¬ f x x) as not_fxx by (intro; now use trueToFalse).
+  assert (f x x) as fxx by now use falseToTrue.
+  now use not_fxx.
+Qed.
+
 Lemma subtype_notEqual_containedIn {X:UU} (S T : hsubtype X) : S ⊆ T -> S ≢ T -> T ⊈ S.
 Proof.
   intros ci ne. apply (squash_to_hProp ne); clear ne; intros [n|n].
