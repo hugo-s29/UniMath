@@ -11,7 +11,9 @@
  Contents
  1. Definitions
  2. Mapping of trivial and product signatures
- 3. Models are Sigma monoids
+ 3. Mapping of constructred limits and colimits of signatures
+ 4. Models are Sigma monoids
+ 5. Instance where the functor is not essentially surjective
 
  ***************************************************************************)
 
@@ -26,8 +28,11 @@ Require Import UniMath.CategoryTheory.Core.Isos.
 Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
 Require Import UniMath.CategoryTheory.Adjunctions.Core.
 Require Import UniMath.CategoryTheory.Equivalences.Core.
+Require Import UniMath.CategoryTheory.Limits.Graphs.Limits.
+Require Import UniMath.CategoryTheory.Limits.Graphs.Colimits.
 
 Require Import UniMath.CategoryTheory.DisplayedCats.Core.
+Require Import UniMath.CategoryTheory.DisplayedCats.Total.
 Require Import UniMath.CategoryTheory.DisplayedCats.Constructions.DisplayedSections.
 
 Require Import UniMath.CategoryTheory.Monoidal.WhiskeredBifunctors.
@@ -330,7 +335,89 @@ Section StrengthToModuleSignature.
       + use (transportf_total2_paths_f (λ x, x --> _)).
   Qed.
 
-  (** 3. Models are Sigma monoids *)
+  (** 3. Mapping of constructred limits and colimits of signatures *)
+
+  (* The functor maps the constructions for (co)limits signatures with strength *)
+  (* to the equivalent construction as module signatures                        *)
+
+  Local Lemma tens_swapped {g : graph}
+    (tens_R : ∏ R, preserves_colimits_of_shape (rightwhiskering_functor Mon_V R) g)
+    : ∏ A, preserves_colimits_of_shape (leftwhiskering_functor Mon_V_swapped A) g.
+  Proof.
+    intro A.
+    assert (rightwhiskering_functor Mon_V A = leftwhiskering_functor Mon_V_swapped A)
+    by (use functor_eq; [use homset_property|reflexivity]).
+    now use (transportf (λ x, preserves_colimits_of_shape x g) _ (tens_R A)).
+  Qed.
+
+  Proposition signature_with_strength_to_module_signatures_colimits (g : graph)
+    (colims_V : Colims_of_shape g V)
+    (tens_R : ∏ R, preserves_colimits_of_shape (rightwhiskering_functor Mon_V R) g)
+    (d : diagram g (pointedtensorialstrength_cat Mon_V_swapped))
+    : strength_to_module_signature_functor (colimit_signature_with_strength _ colims_V (λ x, tens_swapped tens_R (pr1 x)) d)
+    = colimit_module_signature (mapdiagram strength_to_module_signature_functor d) colims_V (λ x, tens_swapped tens_R (pr1 x)).
+  Proof.
+    use module_signature_equality.
+    - intro R; use total2_paths_f.
+      + use idpath.
+      + abstract (
+        use subtypePath;
+        [use isaprop_module_laws|];
+        cbn;
+        unfold colimit_sig_strength_data, ColimFunctor_mor, colim_module_subst;
+        use (colimArrowUnique' (ColimCocone_L_R _ (pr2 R) _ _ _));
+        intro u;
+        etrans;
+        [rewrite assoc; apply cancel_postcomposition;
+          use (colimOfArrowsIn _ _ (ColimCocone_L_R _ (pr2 R) _ _ _))|];
+        cbn; etrans;
+        [rewrite <- assoc; apply cancel_precomposition;
+          use (colimOfArrowsIn (diagram_pointwise (mapdiagram (pr1_category _) _) _) _)|];
+        cbn; symmetry; etrans;
+        [use (colimOfArrowsIn _ _ (ColimCocone_L_R _ _ _ _ (colimit_module_signature_diagram (mapdiagram strength_to_module_signature_functor d) _)))|];
+        cbn; now rewrite assoc
+      ).
+    - intros; etrans.
+      { refine (maponpaths _ _); use transportf_total2_paths_f. }
+      etrans.
+      { use (transportf_total2_paths_f (λ x, x --> _)). }
+      cbn; use colimArrowUnique; intro u; unfold ColimFunctor_mor; cbn.
+      use (colimOfArrowsIn _ _ (colims_V (diagram_pointwise (mapdiagram (pr1_category _) _) _))).
+  Qed.
+
+  Proposition signature_with_strength_to_module_signatures_limits (g : graph)
+    (lims_V : Lims_of_shape g V)
+    (d : diagram g (pointedtensorialstrength_cat Mon_V_swapped))
+    : strength_to_module_signature_functor (limit_signature_with_strength _ lims_V d)
+    = limit_module_signature (mapdiagram strength_to_module_signature_functor d) lims_V.
+  Proof.
+    use module_signature_equality.
+    - intro R; use total2_paths_f.
+      + use idpath. 
+      + abstract (
+          use subtypePath;
+          [use isaprop_module_laws|];
+          cbn;
+          unfold limit_sig_strength_data, LimFunctor_mor, lim_module_subst;
+          use limArrowUnique';
+          intro u;
+          etrans;
+          [rewrite <- assoc; apply cancel_precomposition; use limOfArrowsOut|];
+          rewrite assoc; etrans;
+          [apply cancel_postcomposition; use limArrowCommutes|];
+          symmetry; etrans;
+          [use limArrowCommutes|];
+          cbn; now rewrite assoc
+        ).
+    - intros; etrans.
+      { refine (maponpaths _ _); use transportf_total2_paths_f. }
+      etrans.
+      { use (transportf_total2_paths_f (λ x, x --> _)). }
+      cbn; use limArrowUnique; intro u; unfold ColimFunctor_mor; cbn.
+      use (limArrowCommutes (lims_V (diagram_pointwise (mapdiagram (pr1_category _) d) _))).
+  Qed.
+
+  (** 4. Models are Sigma monoids *)
   Section ModelsAreSigmaMonoids.
     Context {H : V ⟶ V}.
     Context (θ : pointedtensorialstrength Mon_V_swapped H).
@@ -532,6 +619,9 @@ Section StrengthToModuleSignature.
     Defined.
   End ModelsAreSigmaMonoids.
 End StrengthToModuleSignature.
+
+
+(** 5. Instance where the functor is not essentially surjective *)
 
 Section StrengthToModuleSignatureNotEssentiallySurjective.
   Let V : category := SET.

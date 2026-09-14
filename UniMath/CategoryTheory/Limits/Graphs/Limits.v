@@ -185,6 +185,21 @@ Proof.
 now apply limArrowUnique.
 Qed.
 
+Lemma limArrowUnique' {C : precategory}
+      {g : graph} {d : diagram g C} (CC : LimCone d)
+      {c} (k k' : C ⟦ c, lim CC ⟧):
+  (∏ u : vertex g,  k · limOut CC u = k' · limOut CC u) → k = k'.
+Proof.
+  intro eq.
+  apply pathsinv0.
+  etrans.
+  { apply limArrowEta. }
+  apply pathsinv0.
+  apply limArrowUnique.
+  cbn.
+  exact eq.
+Qed.
+
 Definition limOfArrows {C : precategory} {g : graph} {d1 d2 : diagram g C}
   (CC1 : LimCone d1) (CC2 : LimCone d2)
   (f : ∏ (u : vertex g), C⟦dob d1 u,dob d2 u⟧)
