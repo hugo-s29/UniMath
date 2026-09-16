@@ -22,6 +22,10 @@ Require Import UniMath.CategoryTheory.catiso.
 
 Require Import UniMath.CategoryTheory.BicatOfCatsElementary.
 
+Require Import UniMath.CategoryTheory.BicatOfCatsElementary.
+Require Import UniMath.CategoryTheory.Adjunctions.Core.
+Require Import UniMath.CategoryTheory.Equivalences.Core.
+
 Require Import UniMath.CategoryTheory.Monoidal.WhiskeredBifunctors.
 Require Import UniMath.CategoryTheory.Monoidal.Categories.
 Require Import UniMath.CategoryTheory.Monoidal.CategoriesOfMonoids.
@@ -48,6 +52,8 @@ Section FixACategory.
   Let Monad : category := category_Monad C.
 
   Let Monoid_swapped : category := category_of_monoids_in_monoidal_cat EndC_swapped.
+
+  Let Monoids_swapped : category := category_of_monoids_in_monoidal_cat EndC_swapped.
 
 Section MonoidToMonad.
 

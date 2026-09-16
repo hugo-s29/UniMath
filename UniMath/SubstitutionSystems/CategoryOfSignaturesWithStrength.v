@@ -85,7 +85,6 @@ Section CategoryOfSignaturesWithStrength.
   Definition pointedtensorialstrength_cat : category
     := total_category pointedtensorialstrength_disp_cat.
 
-
   (** comments by Ralph Matthes *)
 (*
   Require Import UniMath.Bicategories.Core.Bicat.
@@ -153,7 +152,6 @@ Section CategoryOfSignaturesWithStrength.
 *)
   (** end of comments by Ralph Matthes *)
 
-
   Let forgetful : pointedtensorialstrength_cat ⟶ [V, V]
     := pr1_category _.
 
@@ -182,7 +180,7 @@ Section CategoryOfSignaturesWithStrength.
   Section ProductSignatureWithStrength.
     Context (H : V ⟶ V) (θ : pointedtensorialstrength Mon_V H) (D : V).
 
-    (* Given a signature with strength (H,θ), then H(-) ⊗ D *)
+    (* Given a signature with strength (H,θ), then H(-) ⊗ D *) 
     (* is also a signature with strength whose strength is  *)
     (* given by                                             *)
     (*                α⁻¹                θ                  *)
