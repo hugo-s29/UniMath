@@ -1,3 +1,23 @@
+(***************************************************************************
+
+ Free Model Adjunction
+
+ In this file, we define a left-adjoint "Free" to the forgetful functor from
+ sigma monoids to the base category.
+
+ On an object X ∈ V, Free gives a sigma monoid whose underlying set is the
+ carrier of the initial algebra for (I + H(-) + - ⊗ X).
+
+ Contents
+ 1. Definitions
+ 2. Two examples of signatures with strength
+ 3. Limits are inherited from limits in V
+ 4. Colimits are inherited from colimits in V
+
+ ***************************************************************************)
+
+
+
 Require Import UniMath.Foundations.All.
 Require Import UniMath.MoreFoundations.All.
 
