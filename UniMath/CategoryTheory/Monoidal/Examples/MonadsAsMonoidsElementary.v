@@ -8,8 +8,8 @@
     of monoids in [C, C]
 
    Contents:
-   1. Monads and monoids in [C, C] are equivalent
-   2. Monad modules and monoid modules are equivalent
+   1. Monads and monoids in [C, C] are isomorphic
+   2. Monad modules and monoid modules are isomorphic
  *)
 
 Require Import UniMath.Foundations.All.
@@ -18,14 +18,9 @@ Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
 Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
 Require Import UniMath.CategoryTheory.Core.Isos.
+Require Import UniMath.CategoryTheory.catiso.
 
 Require Import UniMath.CategoryTheory.BicatOfCatsElementary.
-Require Import UniMath.CategoryTheory.Adjunctions.Core.
-Require Import UniMath.CategoryTheory.Equivalences.Core.
-
-Require Import UniMath.CategoryTheory.BicatOfCatsElementary.
-Require Import UniMath.CategoryTheory.Adjunctions.Core.
-Require Import UniMath.CategoryTheory.Equivalences.Core.
 
 Require Import UniMath.CategoryTheory.Monoidal.WhiskeredBifunctors.
 Require Import UniMath.CategoryTheory.Monoidal.Categories.
@@ -40,7 +35,7 @@ Require Import UniMath.CategoryTheory.Monads.LModules.
 Local Open Scope cat.
 
 
-(** 1. Monads and monoids in [C, C] are equivalent *)
+(** 1. Monads and monoids in [C, C] are isomorphic *)
 Section FixACategory.
 
   Context {C : category}.
@@ -196,107 +191,85 @@ Lemma monoid_to_monad_to_monoid
   (M : category_of_monoids_in_monoidal_cat (monendocat_monoidal C))
   : monad_to_monoid_CAT (monoid_to_monad_CAT M) = M.
 Proof.
-  use (total2_paths2_f (idpath _)).
-  use subtypePath; [|easy].
+  use total2_paths_f; [easy|].
+  use total2_paths_f; [easy|].
+  use proofirrelevance.
   use isaprop_monoid_laws.
-Qed.
+Defined.
 
 Lemma monad_to_monoid_to_monad
   (M : Monad)
   : monoid_to_monad_CAT (monad_to_monoid_CAT M) = M.
 Proof.
-  use (total2_paths2_f (idpath _)).
-  use subtypePath; [|easy].
+  use total2_paths_f; [easy|].
+  use total2_paths_f; [easy|].
+  use proofirrelevance.
   use isaprop_disp_Monad_laws.
-Qed.
+Defined.
 
-Definition nat_id_monoid_to_monad_to_monoid_data
-  : nat_trans_data (functor_identity Monad) (monad_to_monoid_functor ∙ monoid_to_monad_functor)
-  := λ M,
-    transportb
-      (λ x, ∑ f, disp_Monad_Mor_laws (pr12 x) (pr12 x) f)
-      (monad_to_monoid_to_monad M)
-      (nat_trans_id _ ,, monads_category_id_subproof _ (pr22 M)).
-
-Lemma nat_id_monoid_to_monad_to_monoid_data_is_nat
-  : is_nat_trans _ _ nat_id_monoid_to_monad_to_monoid_data.
+Lemma monad_to_monoid_functor_fully_faithful
+  : fully_faithful monad_to_monoid_functor.
 Proof.
-  intros M M' f.
-  apply Monad_Mor_equiv.
-  apply nat_trans_eq; [use homset_property|].
-  unfold nat_id_monoid_to_monad_to_monoid_data, transportb.
-  do 2 rewrite transportf_total2.
-  intro A.
-  induction (monad_to_monoid_to_monad M'), (monad_to_monoid_to_monad M); cbn.
-  now rewrite id_left, id_right.
+  intros M M' f; use make_iscontr; cbn.
+  - use tpair.
+    + change (M --> M').
+      use (transportf (λ x, x --> _)); [|use monad_to_monoid_to_monad|].
+      use (transportf (λ x, _ --> x)); [|use monad_to_monoid_to_monad|].
+      now use monoid_to_monad_map.
+    + abstract (
+        use subtypePath;
+        [intro; use isaprop_is_monoid_mor|];
+        simpl; do 2 (rewrite transportf_total2; simpl);
+        etrans;
+        [use maponpaths|];
+        [exact (pr1 f)| |];
+        [use (transportf_total2_paths_f _ _ _ (pr1 f))|];
+        use (transportf_total2_paths_f (λ x, pr1 x ⟹  pr11 M'))
+      ).
+  - intros [g g_hyp].
+    use subtypePath.
+    { intro; use isaset_total2.
+      + use isaset_nat_trans; use homset_property.
+      + intro; use isasetaprop; use isaprop_is_monoid_mor. }
+    use subtypePath.
+    { intro; use isaprop_disp_Monad_Mor_laws. }
+    use subtypePath.
+    { intro; use isaprop_is_nat_trans; use homset_property. }
+    simpl; do 2 rewrite transportf_total2.
+    unfold nat_trans; simpl; do 2 rewrite transportf_total2; simpl.
+    rewrite <- g_hyp; simpl.
+    use pathsinv0; etrans.
+    { apply maponpaths.
+      use (transportf_total2_paths_f (B := λ x, ∑ (T : disp_Monad_data x), disp_Monad_laws T) 
+        (λ x, nat_trans_data (pr11 M) (pr1 x))). }
+    use (transportf_total2_paths_f (B := λ x, ∑ (T : disp_Monad_data x), disp_Monad_laws T) 
+      (λ x, nat_trans_data (pr1 x) (pr11 M'))).
 Qed.
 
-Definition nat_id_monoid_to_monad_to_monoid
-  : functor_identity Monad ⟹ monad_to_monoid_functor ∙ monoid_to_monad_functor
-  := nat_id_monoid_to_monad_to_monoid_data ,, nat_id_monoid_to_monad_to_monoid_data_is_nat.
-
-Definition nat_monad_to_monoid_to_monad_id_data
-  : nat_trans_data (monoid_to_monad_functor ∙ monad_to_monoid_functor) (functor_identity Monoid)
-  := (λ M, nat_trans_id _,, id_is_monoid_mor _ _).
-
-Lemma nat_monad_to_monoid_to_monad_id_is_nat
-  : is_nat_trans _ _ nat_monad_to_monoid_to_monad_id_data.
+Lemma monad_to_monoid_functor_isweq
+  : isweq monad_to_monoid_functor.
 Proof.
-  intros M M' f.
-  apply MON_mor_eq.
-  apply nat_trans_eq; [use homset_property |].
-  intro A; cbn. now rewrite id_left, id_right.
+  use (weqproperty (weq_iso monad_to_monoid_CAT monoid_to_monad_CAT _ _)).
+  - intro R. use pair_path_in2.
+    use subtypePath; [|easy].
+    intro; use isaprop_disp_Monad_laws.
+  - intro R. use pair_path_in2.
+    use subtypePath; [|easy];
+    intro; use isaprop_monoid_laws.
 Qed.
 
-Definition nat_monad_to_monoid_to_monad_id
-  : monoid_to_monad_functor ∙ monad_to_monoid_functor ⟹ functor_identity Monoid
-  := nat_monad_to_monoid_to_monad_id_data ,, nat_monad_to_monoid_to_monad_id_is_nat.
-
-Definition adjunction_monad_monoid
-  : adjunction_data Monad Monoid
-  := make_adjunction_data
-        monad_to_monoid_functor
-        monoid_to_monad_functor
-        nat_id_monoid_to_monad_to_monoid
-        nat_monad_to_monoid_to_monad_id.
-
-Lemma adjunction_monad_monoid_equiv : forms_equivalence adjunction_monad_monoid.
+Definition monad_iso_monoid_endcat
+  : catiso Monad Monoid.
 Proof.
-  use make_forms_equivalence.
-  - intro M; use make_is_z_isomorphism; [|use make_is_inverse_in_precat].
-    {
-      apply (transportb (λ x, ∑ f, disp_Monad_Mor_laws (pr12 x) (pr12 x) f) (monad_to_monoid_to_monad M)).
-      exists (nat_trans_id _).
-      exact (monads_category_id_subproof _ (pr22 M)).
-    }
+  exists (monad_to_monoid_functor).
+  split.
+  - exact monad_to_monoid_functor_fully_faithful.
+  - exact monad_to_monoid_functor_isweq.
+Defined.
 
-    all: use subtypePath;
-      [use isaprop_disp_Monad_Mor_laws|];
-      apply nat_trans_eq; [use homset_property |]; intro A; cbn;
-      do 2 (unfold nat_id_monoid_to_monad_to_monoid_data, transportb; rewrite transportf_total2; cbn);
-      induction monad_to_monoid_to_monad; cbn; use id_left.
-
-  - intro M; use make_is_z_isomorphism; [|use make_is_inverse_in_precat].
-
-    {
-      eapply (transportb (λ x, ∑ f, is_monoid_mor _ (pr2 x) (pr2 x) f) (monoid_to_monad_to_monoid M)).
-      exists (identity _); use id_is_monoid_mor.
-    }
-
-    all: apply MON_mor_eq; apply nat_trans_eq; [use homset_property |]; intro A; cbn;
-      unfold transportb; rewrite transportf_total2; cbn;
-      induction (monoid_to_monad_to_monoid M);
-      now rewrite id_left.
-Qed.
-
-Definition monad_equiv_monoid_endcat
-  : equivalence_of_cats Monad Monoid
-  := make_equivalence_of_cats adjunction_monad_monoid adjunction_monad_monoid_equiv.
-
-
-(** 2. Monad modules and monoid modules are equivalent *)
+(** 2. Monad modules and monoid modules are isomorphic *)
 Section FixAMonoid.
-  (* We show that monad left modules are equivalent to monoid left-modules, that is, right-modules for the swapped monoidal product *)
+  (* We show that monad left modules are isomorphic to monoid left-modules, that is, right-modules for the swapped monoidal product *)
 
   Context (monoid' : Monoid).
   Let monad : Monad := monoid_to_monad_CAT monoid'.
@@ -423,79 +396,42 @@ Section FixAMonoid.
     : monoidModule ⟶ monadModule
     := make_functor monoid_to_monad_modules_functor_data monoid_to_monad_modules_functor_laws.
 
-  Definition adjunction_monad_monoid_modules_unit
-    : functor_identity _ ⟹ monad_to_monoid_modules_functor ∙ monoid_to_monad_modules_functor.
+  Lemma monad_to_monoid_modules_functor_fully_faithful
+    : fully_faithful monad_to_monoid_modules_functor.
   Proof.
-    use make_nat_trans.
-    - use LModule_identity.
-    - abstract (
-          intros M M' f; apply LModule_Mor_equiv;
-          use nat_trans_eq; [apply homset_property|]; intro; cbn;
-          now rewrite id_left, id_right
-        ).
-  Defined.
-
-  Definition adjunction_monad_monoid_modules_counit
-    : monoid_to_monad_modules_functor ∙ monad_to_monoid_modules_functor ⟹ functor_identity _.
-  Proof.
-    use make_nat_trans.
-    - intro M; cbn; exists (nat_trans_id _).
-      abstract (
-          apply nat_trans_eq; [use homset_property|];
-          intro; cbn; now rewrite id_left, id_right
-      ).
-    - abstract (
-          intros M M' f; apply MOD_mor_eq;
-          apply nat_trans_eq; [use homset_property|];
-          intro; cbn; now rewrite id_left, id_right
-        ).
-  Defined.
-
-  Definition adjunction_monad_monoid_modules
-    : adjunction_data monadModule monoidModule.
-  Proof.
-    use make_adjunction_data.
-    - exact monad_to_monoid_modules_functor.
-    - exact monoid_to_monad_modules_functor.
-    - exact adjunction_monad_monoid_modules_unit.
-    - exact adjunction_monad_monoid_modules_counit.
-  Defined.
-
-  Lemma adjunction_monad_monoid_modules_equiv
-    : forms_equivalence adjunction_monad_monoid_modules.
-  Proof.
-    use make_forms_equivalence.
-    - intro M; use make_is_z_isomorphism; cbn; try split.
-      + exists (nat_trans_id _).
-        abstract(intro; now rewrite id_left, id_right).
-      + apply LModule_Mor_equiv.
-        apply nat_trans_eq; [use homset_property|].
-        intro; use id_left.
-      + apply LModule_Mor_equiv.
-        apply nat_trans_eq; [use homset_property|].
-        intro; use id_left.
-    - intro M; use make_is_z_isomorphism; try split.
-      + exists (nat_trans_id _).
-        abstract (
-            unfold is_module_mor; cbn;
-            apply nat_trans_eq; [use homset_property|];
-            intro; cbn; now rewrite id_left, id_right
-        ).
-      + apply MOD_mor_eq.
-        apply nat_trans_eq; [use homset_property|].
-        intro; use id_left.
-      + apply MOD_mor_eq.
-        apply nat_trans_eq; [use homset_property|].
-        intro; use id_left.
+    intros M M'.
+    use (weqproperty (weq_iso (monad_to_monoid_modules_map M M')
+      (monoid_to_monad_modules_map _ _) _ _)); cbn.
+    - intro X; use subtypePath.
+      { intro; use impred_isaprop; intro; use homset_property. }
+      reflexivity.
+    - intro X; use subtypePath.
+      { intro; use isaprop_is_module_mor. }
+      reflexivity.
   Qed.
 
-
-  Definition monad_modules_equiv_monoid_modules_endcat
-    : equivalence_of_cats monadModule monoidModule.
+  Lemma monad_to_monoid_modules_functor_is_weq
+    : isweq monad_to_monoid_modules_functor.
   Proof.
-    use make_equivalence_of_cats.
-    - exact adjunction_monad_monoid_modules.
-    - exact adjunction_monad_monoid_modules_equiv.
+    use (weqproperty (weq_iso monad_to_monoid_modules monoid_to_monad_modules _ _)).
+    - intro X.
+      use subtypePath.
+      { intro; use isaprop_LModule_laws. }
+      reflexivity.
+    - intro X.
+      use pair_path_in2.
+      use subtypePath.
+      { intro. use isaprop_module_laws. }
+      reflexivity.
+  Qed.
+
+  Definition monad_modules_iso_monoid_modules_endcat
+    : catiso monadModule monoidModule.
+  Proof.
+    exists monad_to_monoid_modules_functor.
+    split.
+    - exact monad_to_monoid_modules_functor_fully_faithful.
+    - exact monad_to_monoid_modules_functor_is_weq.
   Defined.
 
 End FixAMonoid.

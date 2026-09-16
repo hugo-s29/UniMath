@@ -26,8 +26,7 @@ Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
 Require Import UniMath.CategoryTheory.Core.Isos.
 Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
-Require Import UniMath.CategoryTheory.Adjunctions.Core.
-Require Import UniMath.CategoryTheory.Equivalences.Core.
+Require Import UniMath.CategoryTheory.catiso.
 Require Import UniMath.CategoryTheory.Limits.Graphs.Limits.
 Require Import UniMath.CategoryTheory.Limits.Graphs.Colimits.
 
@@ -427,7 +426,7 @@ Section StrengthToModuleSignature.
       : models_of_module_signatures_cat (strength_to_module_signature θ).
     Proof.
       use tpair; [|use tpair].
-      - use monoid_swapped_to_monoid_functor; exact (SigmaMonoid_to_monoid θ M).
+      - use monoid_swapped_to_monoid_mon; exact (SigmaMonoid_to_monoid θ M).
         (* SigmaMonoid_to_monoid gives an element of MON Mon_V_swapped and not MON Mon_V *)
       - exact (SigmaMonoid_τ θ M).
       - exact (!SigmaMonoid_is_compatible θ M).
@@ -503,119 +502,74 @@ Section StrengthToModuleSignature.
       : models_of_module_signatures_cat (strength_to_module_signature θ) ⟶ SigmaMonoid θ
       := make_functor _ model_to_sigma_monoid_functor_laws.
 
-    Local Definition equivalence_models_sigma_monoids_adjuction_unit_data
-      : nat_trans_data (functor_identity (SigmaMonoid θ)) (sigma_monoid_to_model_functor ∙ model_to_sigma_monoid_functor).
+    Lemma sigma_monoid_to_model_functor_fully_faithful
+      : fully_faithful sigma_monoid_to_model_functor.
     Proof.
-      intro R.
-      exists (identity _).
-      use ((_ ,, _ ,, _) ,, tt); cbn.
-      - abstract(now rewrite functor_id, id_left, id_right).
-      - abstract (
-            unfold is_monoid_mor_mult; cbn; unfold functoronmorphisms1;
-            now rewrite (bifunctor_leftid (monoidal_swapped Mon_V)),
-              (bifunctor_rightid (monoidal_swapped Mon_V)),
-              id_left, id_left, id_right
+      intros M M'.
+      use (weqproperty (weq_iso (#sigma_monoid_to_model_functor) _ _ _)).
+      - intro F.
+        exists (pr11 F).
+        use ((_ ,, _ ,, _) ,, tt); cbn.
+        + use (pr2 F).
+        + abstract (
+            etrans; [| use (pr121 F)];
+            use cancel_postcomposition;
+            use monoidal_swapped_whiskering
           ).
-      - abstract (use id_right).
-    Defined.
-
-    Local Lemma equivalence_models_sigma_monoids_adjuction_unit_law
-      : is_nat_trans _ _ equivalence_models_sigma_monoids_adjuction_unit_data.
-    Proof.
-      intros ? ? ?.
-      apply SigmaMonoid_mor_eq.
-      cbn; now rewrite id_left, id_right.
-    Defined.
-
-    Local Definition equivalence_models_sigma_monoids_adjuction_unit
-      : functor_identity _ ⟹ sigma_monoid_to_model_functor ∙ model_to_sigma_monoid_functor
-      := make_nat_trans _ _ _ equivalence_models_sigma_monoids_adjuction_unit_law.
-
-    Local Definition equivalence_models_sigma_monoids_adjuction_counit_data
-      : nat_trans_data (model_to_sigma_monoid_functor ∙ sigma_monoid_to_model_functor) (functor_identity _).
-    Proof.
-      intro R; use ((_ ,, _ ,, _) ,, _); cbn.
-      - exact (identity _).
-      - abstract (
-            unfold is_monoid_mor_mult, functoronmorphisms1;
-            now rewrite (bifunctor_leftid Mon_V), (bifunctor_rightid Mon_V),
-              id_left, id_left, id_right
-          ).
-      - abstract (use id_right).
-      - abstract (
-          unfold is_model_of_signature_mor; cbn;
-          now rewrite functor_id, id_left, id_right
-        ).
-    Defined.
-
-    Local Lemma equivalence_models_sigma_monoids_adjuction_counit_law
-      : is_nat_trans _ _ equivalence_models_sigma_monoids_adjuction_counit_data.
-    Proof.
-      intros ? ? ?.
-      use subtypePath.
-      { intro; use homset_property. }
-      apply MON_mor_eq.
-      cbn; now rewrite id_left, id_right.
+        + abstract (use (pr221 F)).
+      - intro f; cbn.
+        use subtypePath.
+        { intro; do 2 try use isapropdirprod.
+          + use homset_property.
+          + use isaprop_is_monoid_mor.
+          + use isapropunit. }
+        reflexivity.
+      - intro f; cbn.
+        use subtypePath.
+        { intro; use homset_property. }
+        use subtypePath.
+        { intro; use isaprop_is_monoid_mor. }
+        reflexivity.
     Qed.
 
-    Local Definition equivalence_models_sigma_monoids_adjuction_counit
-      : model_to_sigma_monoid_functor ∙ sigma_monoid_to_model_functor ⟹ functor_identity _
-      := make_nat_trans _ _ _ equivalence_models_sigma_monoids_adjuction_counit_law.
-
-    Definition equivalence_models_sigma_monoids_adjuction
-      : adjunction_data (SigmaMonoid θ) (models_of_module_signatures_cat (strength_to_module_signature θ)).
+    Lemma sigma_monoid_to_model_functor_isweq
+      : isweq sigma_monoid_to_model_functor.
     Proof.
-      use make_adjunction_data.
-      - exact sigma_monoid_to_model_functor.
-      - exact model_to_sigma_monoid_functor.
-      - exact equivalence_models_sigma_monoids_adjuction_unit.
-      - exact equivalence_models_sigma_monoids_adjuction_counit.
-    Defined.
+      use (weqproperty (weq_iso _ _ _ _)).
+      - intro M.
+        use (_ ,, (_ ,, _) ,, _); cbn.
+        + exact (pr11 M).
+        + exact (pr12 M).
+        + use monoid_to_monoid_swapped_monoid.
+          exact (pr21 M).
+        + exact (!pr22 M).
+      - intro M; cbn.
+        use pair_path_in2.
+        use subtypePath.
+        { intro; use homset_property. }
+        use pair_path_in2.
+        use pair_path_in2.
+        use proofirrelevance.
+        use isaprop_monoid_laws.
+      - intro M; cbn.
+        use total2_paths2_f.
+        { use total2_paths_f; [reflexivity|].
+          use total2_paths_f; [reflexivity|].
+          use proofirrelevance.
+          use isaprop_monoid_laws. }
+        use subtypePath.
+        { intro; use isaprop_is_module_mor. }
+        rewrite transportf_total2.
+        use (transportf_total2_paths_f (λ x, H x --> x)).
+    Qed.
 
-    Definition equivalence_models_sigma_monoids_forms_equivalence
-      : forms_equivalence equivalence_models_sigma_monoids_adjuction.
+    Definition iso_models_sigma_monoids
+      : catiso (SigmaMonoid θ) (models_of_module_signatures_cat (strength_to_module_signature θ)).
     Proof.
+      exists sigma_monoid_to_model_functor.
       split.
-      - intro R; use ((_ ,, (_ ,, _ ,, _) ,, tt) ,, _ ,, _); cbn.
-        + use identity.
-        + abstract (now rewrite functor_id, id_left, id_right).
-        + abstract (
-              unfold is_monoid_mor_mult, functoronmorphisms1; cbn;
-              now rewrite (bifunctor_leftid Mon_V), (bifunctor_rightid Mon_V), id_left, id_left, id_right
-            ).
-        + abstract (use id_right).
-        + apply SigmaMonoid_mor_eq.
-          use id_left.
-        + apply SigmaMonoid_mor_eq.
-          use id_left.
-      - intro R; use (((_ ,, _ ,, _) ,, _) ,, _ ,, _); cbn.
-        + use identity.
-        + abstract (
-              unfold is_monoid_mor_mult, functoronmorphisms1;
-              now rewrite (bifunctor_leftid Mon_V), (bifunctor_rightid Mon_V),
-                id_right, id_right, id_left
-            ).
-        + abstract (use id_right).
-        + abstract (
-            unfold is_model_of_signature_mor; cbn;
-            now rewrite functor_id, id_left, id_right
-          ).
-        + use subtypePath.
-          { intro; use homset_property. }
-          apply MON_mor_eq.
-          use id_left.
-        + use subtypePath.
-          { intro; use homset_property. }
-          apply MON_mor_eq.
-          use id_left.
-    Qed.
-
-    Definition equivalence_models_sigma_monoids
-      : equivalence_of_cats (SigmaMonoid θ) (models_of_module_signatures_cat (strength_to_module_signature θ)).
-    Proof.
-      use make_equivalence_of_cats.
-      - exact equivalence_models_sigma_monoids_adjuction.
-      - exact equivalence_models_sigma_monoids_forms_equivalence.
+      - exact sigma_monoid_to_model_functor_fully_faithful.
+      - exact sigma_monoid_to_model_functor_isweq.
     Defined.
   End ModelsAreSigmaMonoids.
 End StrengthToModuleSignature.

@@ -12,9 +12,7 @@ Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
 Require Import UniMath.CategoryTheory.Core.Isos.
 Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
-
-Require Import UniMath.CategoryTheory.Adjunctions.Core.
-Require Import UniMath.CategoryTheory.Equivalences.Core.
+Require Import UniMath.CategoryTheory.catiso.
 
 Require Import UniMath.CategoryTheory.Monoidal.WhiskeredBifunctors.
 Require Import UniMath.CategoryTheory.Monoidal.Categories.
@@ -261,7 +259,7 @@ Proof.
     apply idpath.
 Defined.
 
-(** Monoids in the monoidal category [monoidal_swapped M] and monoids in M are equivalent *)
+(** Monoids in the monoidal category [monoidal_swapped M] and monoids in M are isomorphic *)
 
 Section MonoidsSwapped.
   Context {C : category} (M : monoidal C).
@@ -366,136 +364,45 @@ Section MonoidsSwapped.
     : MON M
     := pr1 R ,, monoid_swapped_to_monoid_monoid (pr2 R).
 
-  Lemma monoid_swapped_to_monoid_mor_law {R R' : MON (monoidal_swapped M)} (f : R --> R')
-    : is_monoid_mor M (monoid_swapped_to_monoid_monoid (pr2 R))
-      (monoid_swapped_to_monoid_monoid (pr2 R')) (pr1 f).
+  Lemma monoid_to_monoid_swapped_functor_is_fully_faithful
+    : fully_faithful monoid_to_monoid_swapped_functor.
   Proof.
+    intros R R'; cbn.
+    intros [f [f_hyp_mult f_hyp_unit]]; use make_iscontr.
+    - use ((f ,, _ ,, _),, _); cbn.
+      + abstract (
+          etrans; [|use f_hyp_mult]; cbn;
+          use cancel_postcomposition;
+          symmetry; use monoidal_swapped_whiskering
+        ).
+      + abstract (use f_hyp_unit).
+      + abstract (use subtypePath; [use isaprop_is_monoid_mor|easy]).
+    - intros [[f' f'_hyp] b].
+      use subtypePath.
+      { intro; use isaset_total2.
+        + use homset_property.
+        + intro; use isasetaprop; use isaprop_is_monoid_mor. }
+      use MON_mor_eq; use (maponpaths pr1 b).
+  Qed.
+
+  Lemma monoid_to_monoid_swapped_functor_isweq
+    : isweq monoid_to_monoid_swapped_functor.
+  Proof.
+    use (weqproperty (weq_iso monoid_to_monoid_swapped_mon monoid_swapped_to_monoid_mon _ _)).
+    - intro R. use pair_path_in2.
+      use subtypePath; [|easy];
+      intro; use isaprop_monoid_laws.
+    - intro R. use pair_path_in2.
+      use subtypePath; [|easy];
+      intro; use isaprop_monoid_laws.
+  Qed.
+
+  Definition iso_monoids_monoids_swapped
+    : catiso (MON M) (MON (monoidal_swapped M)).
+  Proof.
+    exists monoid_to_monoid_swapped_functor.
     split.
-    - unfold is_monoid_mor_mult.
-      cbn; rewrite (monoidal_swapped_whiskering (monoidal_swapped M)).
-      use (pr12 f).
-    - use (pr22 f).
-  Qed.
-
-  Definition monoid_swapped_to_monoid_mor
-    (R R' : MON (monoidal_swapped M)) (f : R --> R')
-    : monoid_swapped_to_monoid_mon R --> monoid_swapped_to_monoid_mon R'
-    := pr1 f ,, monoid_swapped_to_monoid_mor_law f.
-
-
-  Definition monoid_swapped_to_monoid_functor_data
-    : functor_data (MON (monoidal_swapped M)) (MON M).
-  Proof.
-    use tpair.
-    - exact monoid_swapped_to_monoid_mon.
-    - exact monoid_swapped_to_monoid_mor.
+    - exact monoid_to_monoid_swapped_functor_is_fully_faithful.
+    - exact monoid_to_monoid_swapped_functor_isweq.
   Defined.
-
-  Lemma monoid_swapped_to_monoid_functor_laws
-    : is_functor monoid_swapped_to_monoid_functor_data.
-  Proof.
-    split.
-    - intro.
-      apply MON_mor_eq; easy.
-    - intros ? ? ? ? ?.
-      apply MON_mor_eq; easy.
-  Qed.
-
-  Definition monoid_swapped_to_monoid_functor : (MON (monoidal_swapped M)) ⟶ (MON M)
-    := make_functor monoid_swapped_to_monoid_functor_data monoid_swapped_to_monoid_functor_laws.
-
-  Local Definition id_to_swap_unswap_data
-    : nat_trans_data (functor_identity (MON M)) (monoid_to_monoid_swapped_functor ∙ monoid_swapped_to_monoid_functor).
-  Proof.
-    intro R; exists (identity _); cbn; split.
-    - abstract (
-        unfold is_monoid_mor_mult; cbn; unfold functoronmorphisms1;
-        now rewrite (bifunctor_leftid M), (bifunctor_rightid M), id_left, id_left, id_right
-      ).
-    - abstract (use id_right).
-  Defined.
-
-  Local Lemma id_to_swap_unswap_nat
-    : is_nat_trans _ _ id_to_swap_unswap_data.
-  Proof.
-    intros ? ? ?.
-    apply MON_mor_eq.
-    cbn; now rewrite id_left, id_right.
-  Qed.
-
-  Local Definition id_to_swap_unswap
-    : functor_identity (MON M) ⟹ monoid_to_monoid_swapped_functor ∙ monoid_swapped_to_monoid_functor
-    := make_nat_trans _ _ _ id_to_swap_unswap_nat.
-
-  Local Definition unswap_swap_to_id_data
-    : nat_trans_data (monoid_swapped_to_monoid_functor ∙ monoid_to_monoid_swapped_functor) (functor_identity (MON (monoidal_swapped M))).
-  Proof.
-    intro R; exists (identity _); cbn; split.
-    - abstract (
-        unfold is_monoid_mor_mult; cbn; unfold functoronmorphisms1;
-        now rewrite (bifunctor_leftid (monoidal_swapped M)), (bifunctor_rightid (monoidal_swapped M)), id_left, id_left, id_right
-      ).
-    - abstract (use id_right).
-  Defined.
-
-  Local Definition unswap_swap_to_id_nat
-    : is_nat_trans _ _ unswap_swap_to_id_data.
-  Proof.
-    intros ? ? ?.
-    apply MON_mor_eq.
-    cbn; now rewrite id_left, id_right.
-  Defined.
-
-  Local Definition unswap_swap_to_id
-    : monoid_swapped_to_monoid_functor ∙ monoid_to_monoid_swapped_functor ⟹ functor_identity (MON (monoidal_swapped M))
-    := make_nat_trans _ _ _ unswap_swap_to_id_nat.
-
-  Definition equivalence_monoids_monoids_swapped_adjunction
-    : adjunction_data (MON M) (MON (monoidal_swapped M)).
-  Proof.
-    use make_adjunction_data.
-    - exact monoid_to_monoid_swapped_functor.
-    - exact monoid_swapped_to_monoid_functor.
-    - exact id_to_swap_unswap.
-    - exact unswap_swap_to_id.
-  Defined.
-
-  Lemma equivalence_monoids_monoids_swapped_forms_equivalence
-    : forms_equivalence equivalence_monoids_monoids_swapped_adjunction.
-  Proof.
-    split.
-    - intro R; use tpair; cbn.
-      + exists (identity _); split.
-        * abstract (
-            unfold is_monoid_mor_mult, functoronmorphisms1;
-            now rewrite (bifunctor_leftid M), (bifunctor_rightid M), id_left, id_left, id_right
-          ).
-        * abstract (use id_right).
-      + split.
-        * apply MON_mor_eq.
-          use id_left.
-        * apply MON_mor_eq.
-          use id_left.
-    - intro R; use tpair; cbn.
-      + exists (identity _); split.
-        * abstract (
-            unfold is_monoid_mor_mult, functoronmorphisms1;
-            now rewrite (bifunctor_leftid (monoidal_swapped M)), (bifunctor_rightid (monoidal_swapped M)), id_left, id_left, id_right
-          ).
-        * abstract (use id_right).
-      + split.
-        * apply MON_mor_eq.
-          use id_left.
-        * apply MON_mor_eq.
-          use id_left.
-  Qed.
-
-  Definition equivalence_monoids_monoids_swapped
-    : equivalence_of_cats (MON M) (MON (monoidal_swapped M)).
-  Proof.
-    use make_equivalence_of_cats.
-    - exact equivalence_monoids_monoids_swapped_adjunction.
-    - exact equivalence_monoids_monoids_swapped_forms_equivalence.
-  Defined.
-
 End MonoidsSwapped.
