@@ -65,6 +65,7 @@ EquivalenceSignaturesWithActegoryMorphisms.v
 EquivalenceLaxLineatorsHomogeneousCase.v
 SigmaMonoids.v
 ConstructionOfGHSS.v
+FreeModelAdjunction.v
 BindingSigToMonad_actegorical.v
 
 ContinuitySignature/GeneralLemmas.v
