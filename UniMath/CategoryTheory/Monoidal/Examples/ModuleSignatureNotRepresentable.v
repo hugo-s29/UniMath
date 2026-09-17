@@ -91,7 +91,7 @@ Section SomeSignaturesAreNotRepresentable.
 
     (* We rely on the result that initial models are fixed points of the I + Σ(-) functor *)
     Local Definition iter_signature_initial
-      := initial_model_fixpoint 
+      := initial_model_fixed_point 
           example_module_signature_not_representable_signature
           (BinCoproducts_functor_precat _ _ BinCoproductsHSET) 
           precomp_preserves_bincoproduct
