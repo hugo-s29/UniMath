@@ -15,6 +15,7 @@
   2. Univalence [disp_full_sub_univalent]
   3. Shortcuts for just the resulting total category [full_subcat] [is_univalent_full_subcat]
   4. The truncation functor [truncation_functor]
+  5. (Co)-limits are inherited
 
  **************************************************************************************************)
 Require Import UniMath.Foundations.Sets.
@@ -26,6 +27,9 @@ Require Import UniMath.CategoryTheory.DisplayedCats.Functors.
 Require Import UniMath.CategoryTheory.DisplayedCats.Total.
 Require Import UniMath.CategoryTheory.DisplayedCats.Isos.
 Require Import UniMath.CategoryTheory.DisplayedCats.Univalence.
+
+Require Import UniMath.CategoryTheory.Limits.Graphs.Colimits.
+Require Import UniMath.CategoryTheory.Limits.Graphs.Limits.
 
 Local Open Scope cat.
 
@@ -135,3 +139,83 @@ Section TruncationFunctor.
   Defined.
 
 End TruncationFunctor.
+
+(** * 5. (Co)-limits are inherited *)
+
+Definition full_subcat_inherit_limits
+  {C : category}
+  (P : C → UU)
+  {g : graph}
+  (lims_C : Lims_of_shape g C)
+  (P_lim : ∏ d, P (lim (lims_C d)))
+  : Lims_of_shape g (full_subcat C P).
+Proof.
+  intro d.
+  pose (d' := mapdiagram (pr1_category _) d).
+  use make_LimCone.
+  - eexists. use (P_lim d').
+  - use make_cone.
+    + intro u; use (_ ,, tt); use limOut.
+    + abstract (
+        intros u v e;
+        use subtypePath;
+        [intro; use isapropunit|];
+        use limOutCommutes
+      ).
+  - intros [c Pc] cc.
+    use unique_exists.
+    + use (_ ,, tt); use limArrow; exact (mapcone (pr1_category _) d cc).
+    + abstract (
+        intro v; use subtypePath;
+        [intro; use isapropunit|];
+        use (limArrowCommutes (lims_C d'))
+      ).
+    + abstract (intro y; use isaprop_is_cone_mor).
+    + abstract(
+        intros [f f'] f_hyp;
+        use subtypePath;
+        [intro; use isapropunit|];
+        use limArrowUnique;
+        intro u; use (maponpaths pr1 (f_hyp u))
+      ).
+Defined.
+
+Definition full_subcat_inherit_colimits
+  {C : category}
+  (P : C → UU)
+  {g : graph}
+  (colims_C : Colims_of_shape g C)
+  (P_colim : ∏ (d : diagram g (full_subcat C P))
+               (d' := mapdiagram (pr1_category _) d),
+                  P (colim (colims_C d')))
+  : Colims_of_shape g (full_subcat C P).
+Proof.
+  intro d.
+  pose (d' := mapdiagram (pr1_category _) d).
+  use make_ColimCocone.
+  - eexists. use (P_colim d).
+  - use make_cocone.
+    + intro u; use (_ ,, tt); use (colimIn (colims_C d')).
+    + abstract (
+        intros u v e;
+        use subtypePath;
+        [intro; use isapropunit|];
+        use (colimInCommutes (colims_C d'))
+      ).
+  - intros [c Pc] cc.
+    use unique_exists.
+    + use (_ ,, tt); use colimArrow; exact (mapcocone (pr1_category _) d cc).
+    + abstract (
+        intro v; use subtypePath;
+        [intro; use isapropunit|];
+        use (colimArrowCommutes (colims_C d'))
+      ).
+    + abstract (intro y; use isaprop_is_cocone_mor).
+    + abstract(
+        intros [f f'] f_hyp;
+        use subtypePath;
+        [intro; use isapropunit|];
+        use colimArrowUnique;
+        intro u; use (maponpaths pr1 (f_hyp u))
+      ).
+Defined.
