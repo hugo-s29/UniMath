@@ -42,6 +42,13 @@ Definition forms_equivalence {A B : precategory} (X : adjunction_data A B)
            (η := adjunit X) (ε := adjcounit X) : UU
   := (∏ a, is_z_isomorphism (η a)) × (∏ b, is_z_isomorphism (ε b)).
 
+Lemma isaprop_forms_equivalence
+  {A B : category} (X : adjunction_data A B)
+  : isaprop (forms_equivalence X).
+Proof.
+  use isapropdirprod; use impred_isaprop; intro; use isaprop_is_z_isomorphism.
+Qed.
+
 Definition make_forms_equivalence {A B : precategory}
            (adjData : adjunction_data A B)
            (η := adjunit adjData)

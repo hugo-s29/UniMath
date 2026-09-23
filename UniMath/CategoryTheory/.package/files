@@ -428,6 +428,8 @@ Monads/MonadAlgebras.v
 Monads/Comonads.v
 Monads/ComonadCoalgebras.v
 
+Adjunctions/Monadic.v
+
 DisplayedCats/Examples/Sigma.v
 DisplayedCats/Limits.v
 DisplayedCats/Examples.v
