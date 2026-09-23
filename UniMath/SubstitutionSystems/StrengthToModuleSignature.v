@@ -13,7 +13,7 @@
  2. Mapping of trivial and product signatures
  3. Mapping of constructred limits and colimits of signatures
  4. Models are Sigma monoids
- 5. Instance where the functor is not essentially surjective
+ 5. Instance where the functor is not essentially surjective, nor full, nor faithful
 
  ***************************************************************************)
 
@@ -27,6 +27,7 @@ Require Import UniMath.CategoryTheory.Core.Functors.
 Require Import UniMath.CategoryTheory.Core.Isos.
 Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
 Require Import UniMath.CategoryTheory.catiso.
+Require Import UniMath.CategoryTheory.Limits.Graphs.Terminal.
 Require Import UniMath.CategoryTheory.Limits.Graphs.Limits.
 Require Import UniMath.CategoryTheory.Limits.Graphs.Colimits.
 
@@ -44,8 +45,7 @@ Require Import UniMath.CategoryTheory.Monoidal.TotalCategoriesOfRModules.
 Require Import UniMath.CategoryTheory.Monoidal.ModuleSignatures.
 Require Import UniMath.CategoryTheory.Monoidal.ModelsOfModuleSignature.
 
-Require Import UniMath.CategoryTheory.Categories.HSET.Core.
-Require Import UniMath.CategoryTheory.Categories.HSET.MonoEpiIso.
+Require Import UniMath.CategoryTheory.Categories.HSET.All.
 
 Require Import UniMath.CategoryTheory.Actegories.ConstructionOfActegories.
 Require Import UniMath.CategoryTheory.Actegories.MorphismsOfActegories.
@@ -293,7 +293,6 @@ Section StrengthToModuleSignature.
   Definition strength_to_module_signature_functor
     : pointedtensorialstrength_cat Mon_V_swapped ⟶ module_signature_cat (C := V_Mon)
     := make_functor _ strength_to_module_signature_functor_laws.
-
 
   (** 2. Mapping of trivial and product signatures *)
 
@@ -574,12 +573,12 @@ Section StrengthToModuleSignature.
   End ModelsAreSigmaMonoids.
 End StrengthToModuleSignature.
 
+(** 5. Instance where the functor is not essentially surjective, nor full and nor faithful *)
 
-(** 5. Instance where the functor is not essentially surjective *)
-
-Section StrengthToModuleSignatureNotEssentiallySurjective.
+Section StrengthToModuleSignatureProperties.
   Let V : category := SET.
   Let Mon_V : monoidal V := SET_cartesian_monoidal.
+  Let Mon_V_swapped : monoidal V := monoidal_swapped Mon_V.
 
   Let V_Mon : monoidal_cat := V ,, Mon_V.
 
@@ -664,7 +663,7 @@ Section StrengthToModuleSignatureNotEssentiallySurjective.
   Defined.
 
   Section IfItWasIso.
-    Context (hyp : ∑ (Hθ : pointedtensorialstrength_cat (Mon_V_swapped Mon_V)),
+    Context (hyp : ∑ (Hθ : pointedtensorialstrength_cat Mon_V_swapped),
        z_iso (strength_to_module_signature_functor Mon_V Hθ) signature).
 
     Let H : V ⟶ V := pr11 hyp.
@@ -805,4 +804,173 @@ Section StrengthToModuleSignatureNotEssentiallySurjective.
     - use contradiction.
     -use (X signature).
   Qed.
-End StrengthToModuleSignatureNotEssentiallySurjective.
+
+  (* Propositional truncation on hSets *)
+  Local Definition trunc (A : hSet): hSet
+    := pr1 (∥ A ∥) ,, isasetaprop (pr2 (∥ A ∥)).
+
+  (* Propositional truncation functor *)
+  Local Definition trunc_functor : V ⟶ V.
+  Proof.
+    use make_functor.
+    - use make_functor_data.
+      { exact trunc. }
+      { intros A B f; use (hinhfun f). }
+    - split.
+      { abstract (intro; now do 3 (use funextsec; intro)). }
+      { abstract (do 5 intro; now do 3 (use funextsec; intro)). }
+  Defined.
+
+  Local Definition strength_for_trunc_functor
+    : pointedtensorialstrength Mon_V_swapped trunc_functor.
+  Proof.
+    repeat use tpair; cbn.
+    - intros [A a] B [b a']; cbn in *.
+      use (factor_through_squash _ _ b).
+      { use isapropishinh. }
+      intro b'; exact (hinhpr (b' ,, a')).
+    - abstract (do 4 intro; use funextsec; intro; use proofirrelevance; use isapropishinh).
+    - abstract (do 4 intro; use funextsec; intro; use proofirrelevance; use isapropishinh).
+    - abstract (do 3 intro; use funextsec; intro; use proofirrelevance; use isapropishinh).
+    - abstract (intro; use funextsec; intro; use proofirrelevance; use isapropishinh).
+  Defined.
+
+  (* Constant functor on the unit set *)
+  Local Definition unit_functor : V ⟶ V.
+  Proof.
+    use make_functor.
+    - use make_functor_data.
+      { intro; exact unitset. }
+      { intros ? ? ?; exact (λ x, x). }
+    - now split.
+  Defined.
+
+  Local Definition strength_for_unit_functor
+    : pointedtensorialstrength Mon_V_swapped unit_functor.
+  Proof.
+    repeat use tpair; cbn.
+    - intros ? ? ?; exact tt.
+    - abstract (intros ? ? ? ?; use proofirrelevance; use impred; intro; use isapropunit).
+    - abstract (intros ? ? ? ?; use proofirrelevance; use impred; intro; use isapropunit).
+    - abstract (intros ? ? ?; use proofirrelevance; use impred; intro; use isapropunit).
+    - abstract (intros ?; use proofirrelevance; use impred; intro; use isapropunit).
+  Defined.
+
+  Let T : pointedtensorialstrength_cat _ := _ ,, strength_for_trunc_functor.
+  Let U : pointedtensorialstrength_cat _ := _ ,, strength_for_unit_functor.
+
+  Local Definition iota_unit_to_truncation 
+    : strength_to_module_signature_functor _ U --> strength_to_module_signature_functor _ T.
+  Proof.
+    use tpair; cbn.
+    - intro R; use tpair; cbn.
+      { intro x; use hinhpr; use (monoid_data_unit _ (pr12 R) x). }
+      { abstract(use proofirrelevance; use impred; intro; use isapropishinh). }
+    - abstract (
+        intros R R' f;
+        use proofirrelevance;
+        use isaproptotal2;
+        [intro; use isaprop_is_module_mor|];
+        intros; use proofirrelevance;
+        use impred; intro; use isapropishinh
+      ).
+  Defined.
+
+  Theorem strength_to_module_not_full
+    : ¬ full (strength_to_module_signature_functor Mon_V).
+  Proof.
+    intro hyp.
+    use (factor_through_squash isapropempty _ (hyp _ _ iota_unit_to_truncation)).
+    intros [[[f _] _] _].
+    use (hinhunivcor1 hfalse (f emptyset tt)).
+  Qed.
+
+  (* Sends ∅ to 2 and non empty sets to 1 *)
+  Local Definition P_functor : V ⟶ V.
+  Proof.
+    use make_functor; [use make_functor_data|].
+    - cbn; intro X; exists (¬ X → bool).
+      abstract (use funspace_isaset; use isasetbool).
+    - intros X Y f u y; exact (u (λ x, y (f x))).
+    - now split.
+  Defined.
+
+
+  Local Definition strength_for_P_functor
+    : pointedtensorialstrength Mon_V_swapped P_functor.
+  Proof.
+    repeat use tpair; cbn.
+    - intros [A ?] B; cbn; intros [f a'] g.
+      exact (f (λ b, g (b,, a'))).
+    - abstract (intros ? ? ? ?; now use funextsec).
+    - abstract (intros ? ? ? ?; now use funextsec).
+    - abstract (intros ? ? ?; now use funextsec).
+    - abstract (intros ?; now use funextsec).
+  Defined.
+
+  Let P : pointedtensorialstrength_cat _ := _ ,, strength_for_P_functor.
+
+  Local Definition P_to_P_id
+    : P --> P.
+  Proof.
+    repeat use tpair.
+    - intro A; exact (λ x, x).
+    - abstract easy.
+    - abstract easy.
+  Defined.
+
+  Local Definition P_to_P_not
+    : P --> P.
+  Proof.
+    repeat use tpair.
+    - intro A; cbn; intros f a; use (negb (f a)).
+    - abstract easy.
+    - abstract easy.
+  Defined.
+
+  Local Lemma iota_P_to_P_are_equal
+    : #(strength_to_module_signature_functor _) P_to_P_id
+    = #(strength_to_module_signature_functor _) P_to_P_not.
+  Proof.
+    use subtypePath.
+    { use isaprop_section_nat_trans_disp_axioms. }
+    use funextsec; intro R; cbn.
+    use subtypePath.
+    { intro; use isaprop_is_module_mor. }
+    use funextsec; intro u; cbn.
+    use funextsec; intro a; use (fromempty (a _)).
+    use (monoid_data_unit _ (pr12 R) tt).
+  Qed.
+
+  Local Lemma P_to_P_not_equal
+    : P_to_P_id != P_to_P_not.
+  Proof.
+    intro hyp; use nopathsfalsetotrue.
+    exact (maponpaths (λ f, pr11 f emptyset (λ _, false) (λ x, x)) hyp).
+  Qed.
+
+  Theorem strength_to_module_not_faithful
+    : ¬ faithful (strength_to_module_signature_functor Mon_V).
+  Proof.
+    intro hyp.
+
+    transparent assert (fiber1 : (hfiber
+       (# (strength_to_module_signature_functor Mon_V))
+       (# (strength_to_module_signature_functor Mon_V) P_to_P_not))).
+    { exists P_to_P_id. use iota_P_to_P_are_equal. }
+
+    transparent assert (fiber2 : (hfiber
+       (# (strength_to_module_signature_functor Mon_V))
+       (# (strength_to_module_signature_functor Mon_V) P_to_P_not))).
+    { exists P_to_P_not. reflexivity. }
+
+    assert (fiber1 = fiber2) as Q.
+    { use proofirrelevance; use hyp. }
+
+    assert (fiber1 != fiber2) as nQ.
+    { intro h; use P_to_P_not_equal; use (maponpaths pr1 h). }
+
+
+    exact (nQ Q).
+  Qed.
+End StrengthToModuleSignatureProperties.
