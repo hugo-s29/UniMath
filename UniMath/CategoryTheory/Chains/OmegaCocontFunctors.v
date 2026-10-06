@@ -1461,6 +1461,20 @@ Proof.
 Defined.
 
 End cocont_slicecat_to_cat_HSET.
+
+
+Section ColimFunctor.
+  Context (A B : category) (g : graph).
+  Context (d : diagram g [A,B]). 
+  Context (H : ∏ u, is_omega_cocont (dob d u)).
+  Context (H' : ∏ a, ColimCocone (diagram_pointwise d a)).
+
+  Lemma is_omega_cocont_ColimFunctor
+    : is_omega_cocont (ColimFunctor d H').
+  Proof.
+    now use ColimFunctor_preserves_colimits_of_shape.
+  Qed.
+End ColimFunctor.
 End cocont_functors.
 
 (** Specialized notations for HSET *)

@@ -399,6 +399,96 @@ Qed.
 End Universal_Unique.
 End Colims.
 
+Section map.
+
+Context {C D : precategory} (F : functor C D).
+
+Definition mapcocone {g : graph} (d : diagram g C) {x : C}
+  (dx : cocone d x) : cocone (mapdiagram F d) (F x).
+Proof.
+use make_cocone.
+- simpl; intro n.
+  exact (#F (coconeIn dx n)).
+- abstract (intros u v e; simpl; rewrite <- functor_comp;
+            apply maponpaths, (coconeInCommutes dx _ _ e)).
+Defined.
+
+Definition preserves_colimit {g : graph} (d : diagram g C) (L : C)
+  (cc : cocone d L) : UU :=
+  isColimCocone d L cc -> isColimCocone (mapdiagram F d) (F L) (mapcocone d cc).
+
+Lemma isaprop_preserves_colimit {g : graph} (d : diagram g C) (L : C) (cc : cocone d L)
+  : isaprop (preserves_colimit d L cc).
+Proof.
+  use impred_isaprop; intro.
+  use isaprop_isColimCocone.
+Qed.
+
+Definition preserves_colimits_of_shape (g : graph) : UU :=
+  ∏ (d : diagram g C) (L : C)(cc : cocone d L), preserves_colimit d L cc.
+
+Lemma isaprop_preserves_colimits_of_shape {g : graph}
+  : isaprop (preserves_colimits_of_shape g).
+Proof.
+  do 3 (use impred_isaprop; intro).
+  use isaprop_preserves_colimit.
+Qed.
+
+End map.
+
+Lemma composition_preserves_colimit 
+  {C D E : category} (F : C ⟶ D) (G : D ⟶ E)
+  {g : graph} {d : diagram g C} (L : C) (cc : cocone d L) 
+  (hyp_F : preserves_colimit F d L cc)
+  (hyp_G : preserves_colimit G (mapdiagram F d) (F L) (mapcocone F d cc))
+  : preserves_colimit (F ∙ G) d L cc.
+Proof.
+  intros isCC; use (hyp_G (hyp_F isCC)).
+Defined.
+
+
+(** ** Left adjoints preserve colimits *)
+Lemma left_adjoint_preserves_colimit {C D : category} (F : functor C D) (HF : is_left_adjoint F)
+      {g : graph} (d : diagram g C) (L : C) (ccL : cocone d L) : preserves_colimit F d L ccL.
+Proof.
+intros HccL M ccM.
+set (G := right_adjoint HF).
+set (H := pr2 HF : are_adjoints F G).
+apply (@iscontrweqb _ (∑ y : C ⟦ L, G M ⟧,
+    ∏ i, coconeIn ccL i · y = φ_adj H (coconeIn ccM i))).
+- eapply (weqcomp (Y := ∑ y : C ⟦ L, G M ⟧,
+    ∏ i, # F (coconeIn ccL i) · φ_adj_inv H y = coconeIn ccM i)).
+  + apply (weqbandf (adjunction_hom_weq H L M)); simpl; intro f.
+    abstract (apply weqiff; try (apply impred; intro; apply D);
+    now rewrite φ_adj_inv_after_φ_adj).
+  + eapply (weqcomp (Y := ∑ y : C ⟦ L, G M ⟧,
+      ∏ i, φ_adj_inv H (coconeIn ccL i · y) = coconeIn ccM i)).
+    * apply weqfibtototal; simpl; intro f.
+    abstract (apply weqiff; try (apply impred; intro; apply D); split;
+      [ intros HH i; rewrite φ_adj_inv_natural_precomp; apply HH
+      | intros HH i; rewrite <- φ_adj_inv_natural_precomp; apply HH ]).
+      (* apply weqonsecfibers; intro i. *)
+      (* rewrite φ_adj_inv_natural_precomp; apply idweq. *)
+    * apply weqfibtototal; simpl; intro f.
+    abstract (apply weqiff; [ | apply impred; intro; apply D | apply impred; intro; apply C ];
+      split; intros HH i;
+        [ now rewrite <- (HH i), φ_adj_after_φ_adj_inv
+        | now rewrite (HH i),  φ_adj_inv_after_φ_adj ]).
+      (* apply weqonsecfibers; intro i. *)
+      (* apply weqimplimpl; [ | | apply hsD | apply hsC]; intro h. *)
+      (*   now rewrite <- h, (φ_adj_after_φ_adj_inv _ _ _ H). *)
+      (* now rewrite h, (φ_adj_inv_after_φ_adj _ _ _ H). *)
+- transparent assert (X : (cocone d (G M))).
+  { use make_cocone.
+    + intro v; apply (φ_adj H (coconeIn ccM v)).
+    + abstract (intros m n e; simpl;
+                rewrite <- (coconeInCommutes ccM m n e); simpl;
+                now rewrite φ_adj_natural_precomp).
+  }
+  apply (HccL (G M) X).
+Defined.
+
+
 (** * Defines colimits in functor categories when the target has colimits *)
 Section ColimFunctor.
 
@@ -502,6 +592,114 @@ Proof.
   apply  (is_functor_z_iso_pointwise_if_z_iso _ _ _ _ _ _ XR).
 Defined.
 
+Local Notation ι a v := (colimIn (HCg a) v).
+
+Local Lemma ι_natural (v : vertex g) {a b : A} (f : A⟦a, b⟧) :
+  # (pr1 (dob D v)) f · ι b v = ι a v · # ColimFunctor f.
+Proof.
+  use (nat_trans_ax (colim_nat_trans_in_data _)).
+Qed.
+
+Context (g' : graph).
+
+Context (HD : ∏ u, preserves_colimits_of_shape (dob D u) g').
+
+Section FixAColimit.
+Context (D' : diagram g' A) 
+  (L : A) (cc : cocone D' L) (CC : isColimCocone D' L cc)
+  (c : C) (cc' : cocone (mapdiagram ColimFunctor D') c).
+
+Definition ColimFunctor_preserves_colimits_cocone_v (v : vertex g)
+  : cocone (mapdiagram (dob D v) D') c.
+Proof.
+  use make_cocone.
+  - intro u; refine (ι _ _ · coconeIn cc' u).
+  - abstract (
+      intros u u' e; cbn; rewrite assoc; etrans;
+      [apply cancel_postcomposition; use ι_natural
+      |rewrite <- assoc;apply cancel_precomposition;use (coconeInCommutes cc')]
+    ).
+Defined.
+
+Local Definition ϕ v
+  : C ⟦ pr1 (dob D v) L, c ⟧
+  := pr11 (HD v _ _ _ CC _ (ColimFunctor_preserves_colimits_cocone_v _)).
+
+Local Lemma ϕ_law (v : vertex g) (u : vertex g')
+  : # (pr1 (dob D v)) (coconeIn cc u) · ϕ v = ι (dob D' u) v · coconeIn cc' u.
+Proof.
+  refine (pr21 (HD _ _ _ _ _ _ _) u).
+Qed.
+
+Local Lemma ϕ_unique (v : vertex g) (ϕ' : pr1 (dob D v) L --> c)
+  (H : ∏ u, # (pr1 (dob D v)) (coconeIn cc u) · ϕ' = ι (dob D' u) v · coconeIn cc' u)
+  : ϕ' = ϕ v.
+Proof.
+  now use path_to_ctr.
+Qed.
+
+Local Lemma ϕ_forms_cocone
+  : forms_cocone (diagram_pointwise D L) ϕ.
+Proof.
+  intros v v' e; cbn.
+  use ϕ_unique; intro u.
+  rewrite assoc.
+  etrans.
+  { apply cancel_postcomposition; use nat_trans_ax. }
+  etrans.
+  { rewrite <- assoc; apply cancel_precomposition; use ϕ_law. }
+  rewrite assoc; apply cancel_postcomposition.
+  use (colimInCommutes (HCg _)).
+Qed.
+
+Definition ColimFunctor_preserves_colimits_arrow
+  : C ⟦ ColimFunctor L, c ⟧.
+Proof.
+  use colimArrow.
+  use (make_cocone _ ϕ_forms_cocone).
+Defined.
+
+Lemma ColimFunctor_preserves_colimits_arrow_is_cocone_mor
+  : is_cocone_mor (mapcocone ColimFunctor D' cc) cc' ColimFunctor_preserves_colimits_arrow.
+Proof.
+  intro u; use colimArrowUnique'; intro v.
+  rewrite assoc; cbn.
+  etrans.
+  { apply cancel_postcomposition; use (colimOfArrowsIn _ _ (HCg _)). }
+  cbn; rewrite <- assoc; etrans.
+  { apply cancel_precomposition; use (colimArrowCommutes (HCg _)). }
+  cbn.
+  use ϕ_law.
+Qed.
+
+Lemma ColimFunctor_preserves_colimits_arrow_unique
+  (f : C ⟦ ColimFunctor L, c ⟧)
+  (Hf : is_cocone_mor (mapcocone ColimFunctor D' cc) cc' f)
+  : f = ColimFunctor_preserves_colimits_arrow.
+Proof.
+  use colimArrowUnique.
+  intro v; cbn.
+  use ϕ_unique.
+  intro u.
+  rewrite assoc.
+  etrans.
+  { apply cancel_postcomposition; use ι_natural. }
+  rewrite <- assoc; apply cancel_precomposition.
+  use Hf.
+Qed.
+
+End FixAColimit.
+
+Lemma ColimFunctor_preserves_colimits_of_shape
+  : preserves_colimits_of_shape ColimFunctor g'.
+Proof.
+  intros D' L cc CC c cc'.
+  use unique_exists.
+  - now use ColimFunctor_preserves_colimits_arrow.
+  - abstract (now use ColimFunctor_preserves_colimits_arrow_is_cocone_mor).
+  - abstract (intro; use isaprop_is_cocone_mor).
+  - abstract (now use ColimFunctor_preserves_colimits_arrow_unique).
+Defined.
 End ColimFunctor.
 
 Lemma ColimsFunctorCategory (A C : category)
@@ -540,97 +738,6 @@ Proof.
                  apply pathsinv0, (colimArrowUnique (CC x)); intro u;
                  now rewrite id_right]).
 Defined.
-
-Section map.
-
-Context {C D : precategory} (F : functor C D).
-
-Definition mapcocone {g : graph} (d : diagram g C) {x : C}
-  (dx : cocone d x) : cocone (mapdiagram F d) (F x).
-Proof.
-use make_cocone.
-- simpl; intro n.
-  exact (#F (coconeIn dx n)).
-- abstract (intros u v e; simpl; rewrite <- functor_comp;
-            apply maponpaths, (coconeInCommutes dx _ _ e)).
-Defined.
-
-Definition preserves_colimit {g : graph} (d : diagram g C) (L : C)
-  (cc : cocone d L) : UU :=
-  isColimCocone d L cc -> isColimCocone (mapdiagram F d) (F L) (mapcocone d cc).
-
-Lemma isaprop_preserves_colimit {g : graph} (d : diagram g C) (L : C) (cc : cocone d L)
-  : isaprop (preserves_colimit d L cc).
-Proof.
-  use impred_isaprop; intro.
-  use isaprop_isColimCocone.
-Qed.
-
-Definition preserves_colimits_of_shape (g : graph) : UU :=
-  ∏ (d : diagram g C) (L : C)(cc : cocone d L), preserves_colimit d L cc.
-
-Lemma isaprop_preserves_colimits_of_shape {g : graph}
-  : isaprop (preserves_colimits_of_shape g).
-Proof.
-  do 3 (use impred_isaprop; intro).
-  use isaprop_preserves_colimit.
-Qed.
-
-End map.
-
-Lemma composition_preserves_colimit 
-  {C D E : category} (F : C ⟶ D) (G : D ⟶ E)
-  {g : graph} {d : diagram g C} (L : C) (cc : cocone d L) 
-  (hyp_F : preserves_colimit F d L cc)
-  (hyp_G : preserves_colimit G (mapdiagram F d) (F L) (mapcocone F d cc))
-  : preserves_colimit (F ∙ G) d L cc.
-Proof.
-  intros isCC; use (hyp_G (hyp_F isCC)).
-Defined.
-
-
-(** ** Left adjoints preserve colimits *)
-Lemma left_adjoint_preserves_colimit {C D : category} (F : functor C D) (HF : is_left_adjoint F)
-      {g : graph} (d : diagram g C) (L : C) (ccL : cocone d L) : preserves_colimit F d L ccL.
-Proof.
-intros HccL M ccM.
-set (G := right_adjoint HF).
-set (H := pr2 HF : are_adjoints F G).
-apply (@iscontrweqb _ (∑ y : C ⟦ L, G M ⟧,
-    ∏ i, coconeIn ccL i · y = φ_adj H (coconeIn ccM i))).
-- eapply (weqcomp (Y := ∑ y : C ⟦ L, G M ⟧,
-    ∏ i, # F (coconeIn ccL i) · φ_adj_inv H y = coconeIn ccM i)).
-  + apply (weqbandf (adjunction_hom_weq H L M)); simpl; intro f.
-    abstract (apply weqiff; try (apply impred; intro; apply D);
-    now rewrite φ_adj_inv_after_φ_adj).
-  + eapply (weqcomp (Y := ∑ y : C ⟦ L, G M ⟧,
-      ∏ i, φ_adj_inv H (coconeIn ccL i · y) = coconeIn ccM i)).
-    * apply weqfibtototal; simpl; intro f.
-    abstract (apply weqiff; try (apply impred; intro; apply D); split;
-      [ intros HH i; rewrite φ_adj_inv_natural_precomp; apply HH
-      | intros HH i; rewrite <- φ_adj_inv_natural_precomp; apply HH ]).
-      (* apply weqonsecfibers; intro i. *)
-      (* rewrite φ_adj_inv_natural_precomp; apply idweq. *)
-    * apply weqfibtototal; simpl; intro f.
-    abstract (apply weqiff; [ | apply impred; intro; apply D | apply impred; intro; apply C ];
-      split; intros HH i;
-        [ now rewrite <- (HH i), φ_adj_after_φ_adj_inv
-        | now rewrite (HH i),  φ_adj_inv_after_φ_adj ]).
-      (* apply weqonsecfibers; intro i. *)
-      (* apply weqimplimpl; [ | | apply hsD | apply hsC]; intro h. *)
-      (*   now rewrite <- h, (φ_adj_after_φ_adj_inv _ _ _ H). *)
-      (* now rewrite h, (φ_adj_inv_after_φ_adj _ _ _ H). *)
-- transparent assert (X : (cocone d (G M))).
-  { use make_cocone.
-    + intro v; apply (φ_adj H (coconeIn ccM v)).
-    + abstract (intros m n e; simpl;
-                rewrite <- (coconeInCommutes ccM m n e); simpl;
-                now rewrite φ_adj_natural_precomp).
-  }
-  apply (HccL (G M) X).
-Defined.
-
-
 
 Section mapcocone_functor_composite.
 

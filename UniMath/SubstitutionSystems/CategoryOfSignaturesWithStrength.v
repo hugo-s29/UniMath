@@ -20,6 +20,7 @@ Require Import UniMath.MoreFoundations.All.
 
 Require Import UniMath.CategoryTheory.DisplayedCats.Core.
 Require Import UniMath.CategoryTheory.DisplayedCats.Total.
+Require Import UniMath.CategoryTheory.DisplayedCats.Constructions.FullSubcategory.
 
 Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
@@ -28,6 +29,7 @@ Require Import UniMath.CategoryTheory.FunctorCategory.
 
 Require Import UniMath.CategoryTheory.Limits.Graphs.Limits.
 Require Import UniMath.CategoryTheory.Limits.Graphs.Colimits.
+Require Import UniMath.CategoryTheory.Chains.All.
 
 Require Import UniMath.CategoryTheory.Monoidal.WhiskeredBifunctors.
 Require Import UniMath.CategoryTheory.Monoidal.Categories.
@@ -798,5 +800,29 @@ Section CategoryOfSignaturesWithStrength.
     : Colims_of_shape g pointedtensorialstrength_cat.
   Proof.
     use (colimit_signature_with_strength_colim_cocone cl H_prod).
+  Defined.
+
+  Definition pointedtensorialstrength_omega_cocont_cat : category
+    := full_subcat pointedtensorialstrength_cat (λ H, is_omega_cocont (pr1 H)).
+
+  Theorem omega_signature_with_strength_inherits_colimits
+    (g : graph) (cl : Colims_of_shape g V)
+    (H_prod : ∏ A : PtdV, preserves_colimits_of_shape (leftwhiskering_functor Mon_V (pr1 A)) g)
+    : Colims_of_shape g pointedtensorialstrength_omega_cocont_cat.
+  Proof.
+    use full_subcat_inherit_colimits.
+    - now use signature_with_strength_inherits_colimits.
+    - intro; use is_omega_cocont_ColimFunctor.
+      intro u; use (pr2 (dob d u)).
+  Defined.
+
+  Theorem omega_signature_with_strength_inherits_limits
+    (g : graph) (cl : Lims_of_shape g V)
+    (H_lim_colim : ∏ (d : diagram g [V, V]), is_omega_cocont (LimFunctor d (λ a, cl _)))
+    : Lims_of_shape g pointedtensorialstrength_omega_cocont_cat.
+  Proof.
+    use full_subcat_inherit_limits.
+    - now use signature_with_strength_inherits_limits.
+    - intro; use H_lim_colim.
   Defined.
 End CategoryOfSignaturesWithStrength.
