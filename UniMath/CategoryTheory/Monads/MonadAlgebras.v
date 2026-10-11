@@ -19,9 +19,13 @@ Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
 Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
 Require Import UniMath.CategoryTheory.whiskering.
+Require Import UniMath.CategoryTheory.DisplayedCats.Core.
+Require Import UniMath.CategoryTheory.DisplayedCats.Total.
 Require Import UniMath.CategoryTheory.Adjunctions.Core.
+Require Import UniMath.CategoryTheory.catiso.
 Require Import UniMath.CategoryTheory.Monads.Monads.
 Require Import UniMath.CategoryTheory.Monads.Derivative.
+Require Import UniMath.CategoryTheory.CategoryEquality.
 
 Local Open Scope cat.
 
@@ -109,6 +113,7 @@ Proof.
             apply idpath).
 Defined.
 
+
 Definition precategory_Alg_ob_mor : precategory_ob_mor
   := (Algebra,, Algebra_mor).
 
@@ -159,8 +164,79 @@ Qed.
 
 Definition MonadAlg: category := MonadAlg_precat ,, has_homsets_MonadAlg.
 
-End Algebra_category.
+Definition Algebra_disp_cat_data : disp_cat_data C.
+Proof.
+  use tpair.
+  - use tpair.
+    + intro X; refine (∑ (x : T X --> X), _); use (Algebra_laws T); exists X; exact x.
+    + intros X Y [x _] [y _] f; exact (x · f = #T f · y).
+  - split; cbn.
+    + abstract (intros X x; 
+        rewrite functor_id, id_left, id_right; use idpath).
+    + abstract (intros X Y Z x y z f g f_hyp g_hyp;
+        rewrite assoc, functor_comp, f_hyp, <- assoc, g_hyp, assoc; use idpath).
+Defined.
 
+Lemma Algebra_disp_cat_locally_propositional : locally_propositional Algebra_disp_cat_data.
+Proof.
+  intros X Y f x y; use homset_property.
+Qed.
+
+Definition Algebra_disp_cat : disp_cat C.
+Proof.
+  use make_disp_cat_locally_prop.
+  - exact Algebra_disp_cat_data.
+  - exact Algebra_disp_cat_locally_propositional.
+Defined.
+
+Definition MonadAlg_disp : category 
+  := total_category Algebra_disp_cat.
+
+Definition MonadAlgToMonadAlg_disp 
+  : MonadAlg ⟶ MonadAlg_disp.
+Proof.
+  use make_functor.
+  - use make_functor_data.
+    + intro X; cbn in X.
+      exists X; exists (Alg_map T X).
+      exact (Algebra_idlaw T X ,, Algebra_multlaw T X).
+    + intros X Y f; cbn in X, Y, f; cbn.
+      exists f; exact (Algebra_mor_commutes T f).
+  - abstract (
+      split; do 5 try intro; 
+      (use subtypePath; [intro; use homset_property|]); 
+      use idpath
+    ).
+Defined.
+
+Lemma MonadAlgToMonadAlg_disp_is_catiso : is_catiso MonadAlgToMonadAlg_disp.
+Proof.
+  split.
+  - intros X Y; use idisweq.
+  - use (weqproperty (weq_iso _ _ _ _)).
+    + intros [X [x hyp]]; use ((X ,, _) ,, _); assumption.
+    + abstract use idpath.
+    + abstract use idpath.
+Defined.
+
+Proposition MonadAlgIsoMonadAlg_disp : catiso MonadAlg MonadAlg_disp.
+Proof.
+  exists MonadAlgToMonadAlg_disp.
+  exact MonadAlgToMonadAlg_disp_is_catiso.
+Defined.
+
+Proposition MonadAlgIsMonadAlg_disp : MonadAlg = MonadAlg_disp.
+Proof.
+  use (invweq (catiso_is_path_cat _ _) MonadAlgIsoMonadAlg_disp).
+Defined.
+
+Coercion ob_from_Algebra_disp_cat_ob (X : MonadAlg_disp)
+  : C := pr1 X.
+
+Coercion mor_from_Algebra_disp_cat_mor {X Y : MonadAlg_disp} (f : MonadAlg_disp⟦X, Y⟧)
+  : C⟦X, Y⟧ := pr1 f.
+
+End Algebra_category.
 
 (** Adjunction between MonadAlg T and C, with right adjoint the forgetful functor
    and left adjoint the free algebra functor. *)
@@ -183,6 +259,9 @@ Proof.
   exists forget_Alg_data.
   abstract (split; red; intros; apply idpath).
 Defined.
+
+Definition forget_Alg_disp : MonadAlg_disp T ⟶ C
+  := pr1_category _.
 
 Definition free_Alg_data : functor_data C (MonadAlg T).
 Proof.

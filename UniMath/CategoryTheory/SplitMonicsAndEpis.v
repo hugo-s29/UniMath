@@ -174,9 +174,11 @@ Proof.
   apply hinhfun.
   intro hf.
   exists (#F (pr1 hf)).
-  unfold is_retraction.
-  now rewrite <- functor_id, <- (pr2 hf), <- functor_comp.
-Qed.
+  abstract (
+    unfold is_retraction;
+    now rewrite <- functor_id, <- (pr2 hf), <- functor_comp
+  ).
+Defined.
 
 (** Functors preserve split monomorphisms *)
 Lemma functor_preserves_split_monic {C D : category} (F : functor C D)
@@ -185,9 +187,11 @@ Lemma functor_preserves_split_monic {C D : category} (F : functor C D)
 Proof.
   intro hf.
   exists (#F (pr1 hf)).
-  unfold is_retraction.
-  now rewrite <- functor_id, <- (pr2 hf), <- functor_comp.
-Qed.
+  abstract (
+    unfold is_retraction;
+    now rewrite <- functor_id, <- (pr2 hf), <- functor_comp
+  ).
+Defined.
 
 (** An epic split monic is an iso. *)
 Lemma merely_split_monic_is_epi_to_is_z_iso
@@ -276,8 +280,8 @@ Proof.
   apply hinhfun.
   intro hf.
   exists (#F (pr1 hf)).
-  now rewrite <-functor_id,<- (pr2 hf), <- functor_comp.
-Qed.
+  abstract (now rewrite <-functor_id,<- (pr2 hf), <- functor_comp).
+Defined.
 
 (** Functors preserve split epimorphisms *)
 Lemma functor_preserves_split_epi {C D : precategory} (F : functor C D)
@@ -287,8 +291,8 @@ Proof.
   intro hf.
   exists (#F (pr1 hf)).
   unfold is_retraction.
-  now rewrite <- functor_id, <- (pr2 hf), <- functor_comp.
-Qed.
+  abstract (now rewrite <- functor_id, <- (pr2 hf), <- functor_comp).
+Defined.
 
 Definition epis_are_split (C : precategory) :=
   ∏ (A B : C) (f : C⟦A,B⟧), isEpi f -> is_merely_split_epi f.
