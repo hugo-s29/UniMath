@@ -6,6 +6,8 @@ Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
 Require Import UniMath.CategoryTheory.Core.Isos.
 
+Require Import UniMath.CategoryTheory.Core.Univalence.
+
 Require Import UniMath.CategoryTheory.DisplayedCats.Core.
 Require Import UniMath.CategoryTheory.DisplayedCats.Isos.
 
@@ -311,6 +313,28 @@ Section Disp_Functor.
       :=
       ∏ x y (xx : D x) (yy : D y) (f : x --> y),
         isweq (fun ff : xx -->[f] yy => ♯ FF ff).
+
+    Definition disp_functor_iso {C}
+         {D D' : disp_cat C} (FF : disp_functor (functor_identity C) D D')
+         := disp_functor_ff FF × ∏ x, isweq (FF x).
+
+
+    Definition disp_functor_iso_inverse_data {C}
+         {D D' : disp_cat C} 
+         {FF : disp_functor (functor_identity C) D D'}
+         (FF_hyp : disp_functor_iso FF)
+      : disp_functor_data (functor_identity C) D' D.
+    Proof.
+      induction FF_hyp as [FF_ff FF_ob].
+      use tpair; cbn.
+      - intros c d; use (invweq (make_weq _ (FF_ob c)) d).
+      - intros c c' d d' f f'; cbn.
+        refine (invmap (make_weq _ (FF_ff _ _ _ _ f)) _).
+        cbn.
+        refine (transportf (λ u, u -->[ f ] _) (!homotweqinvweq _ _) _).
+        refine (transportf (λ u, _ -->[ f ] u) (!homotweqinvweq _ _) _).
+        exact f'.
+    Defined.
 
     Proposition isaprop_disp_functor_ff
                 {C₁ C₂ : category}

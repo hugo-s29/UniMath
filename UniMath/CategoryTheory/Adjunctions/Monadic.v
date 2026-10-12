@@ -8,6 +8,7 @@ Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
 Require Import UniMath.CategoryTheory.Core.TransportMorphisms.
 Require Import UniMath.CategoryTheory.DisplayedCats.Core.
 Require Import UniMath.CategoryTheory.DisplayedCats.Total.
+Require Import UniMath.CategoryTheory.DisplayedCats.Functors.
 Require Import UniMath.CategoryTheory.Adjunctions.Core.
 Require Import UniMath.CategoryTheory.Equivalences.Core.
 Require Import UniMath.CategoryTheory.Limits.Graphs.Colimits.
@@ -127,7 +128,7 @@ Arguments split_coequalizer {_} {_} {_} _ _.
 
 Definition map_split_coequalizer {C D : category} (F : C ⟶ D)
   {x y : C} (f g : C⟦x, y⟧)
-  : split_coequalizer f g → split_coequalizer (#F f) (#F g).
+  : split_coequalizer f g → split_coequalizer (# F f) (#F g).
 Proof.
   intro d; use make_split_coequalizer.
   - exact (F (split_coequalizer_ob d)).
@@ -383,10 +384,255 @@ Proof.
       intros; use proofirrelevance; use homset_property
     ).
 Defined.
+
+Section CatIsoStrictlyCreatesCoequalizers.
+  Local Open Scope mor_disp_scope.
+  Context {C : category} 
+          {disp_D disp_D' : disp_cat C}
+          (loc_D : locally_propositional disp_D)
+          (loc_D' : locally_propositional disp_D')
+          (F : disp_functor (functor_identity C) disp_D disp_D')
+          (F_hyp : disp_functor_iso F)
+          (hyp : strictly_creates_coequalizers_of_U_split_pairs disp_D).
+
+  Local Definition G : disp_functor (functor_identity C) disp_D' disp_D.
+  Proof.
+    exists (disp_functor_iso_inverse_data F_hyp).
+    abstract (split; intros; use proofirrelevance; use loc_D).
+  Defined.
+
+  Local Lemma FG_ob_is_identity (c : C) (d : disp_D' c)
+    : F c (G c d) = d.
+  Proof.
+    use homotweqinvweq.
+  Qed.
+
+  Local Lemma GF_ob_is_identity (c : C) (d : disp_D c)
+    : G c (F c d) = d.
+  Proof.
+    use homotweqinvweq.
+  Qed.
+
+  Opaque G.
+
+  Local Definition G_hyp : disp_functor_iso G.
+  Proof.
+    split.
+    - intros x y xx yy f.
+      use isweqimplimpl.
+      + intro m; cbn in m.
+        refine (transportf (λ u, u -->[ f ] _) (FG_ob_is_identity _ _) _).
+        refine (transportf (λ u, _ -->[ f ] u) (FG_ob_is_identity _ _) _).
+        exact (♯ F m).
+      + use loc_D'.
+      + use loc_D.
+    - intro x.
+      use (weqproperty (weq_iso _ _ _ _)).
+      + use (F x).
+      + intro xx; use FG_ob_is_identity.
+      + intro xx; use GF_ob_is_identity.
+  Qed.
+
+  Section FixASplitCoequalizer.
+    Context (c c' : C) (d : disp_D' c) (d' : disp_D' c').
+    Context (f g : C ⟦ c, c' ⟧) (f' : d -->[ f ] d') (g' : d -->[ g ] d').
+    Context (p : split_coequalizer f g).
+
+    Let Z := split_coequalizer_ob p.
+    Let h := split_coequalizer_arrow p.
+
+    Let Gd : disp_D c := G c d.
+    Let Gd' : disp_D c' := G c' d'.
+    Let Gf : Gd -->[ f ] Gd' := ♯G f'.
+    Let Gg : Gd -->[ g ] Gd' := ♯G g'.
+
+    Let f_tot : total_category disp_D'⟦ c ,, d , c' ,, d' ⟧ := f ,, f'.
+    Let g_tot : total_category disp_D'⟦ c ,, d , c' ,, d' ⟧ := g ,, g'.
+
+    Let Gf_tot : total_category disp_D⟦ c ,, Gd , c' ,, Gd' ⟧ := f ,, Gf.
+    Let Gg_tot : total_category disp_D⟦ c ,, Gd , c' ,, Gd' ⟧ := g ,, Gg.
+
+    Let GZ : disp_D Z := pr1 (iscontrpr1 (hyp _ _ Gf_tot Gg_tot p)).
+    Let Gh : Gd' -->[ h ] GZ := pr12 (iscontrpr1 (hyp _ _ Gf_tot Gg_tot p)).
+
+    Let Gh_tot : total_category disp_D⟦ c' ,, Gd' , Z ,, GZ ⟧ := h ,, Gh.
+
+    Local Definition z_structure : disp_D' Z := F Z GZ.
+
+    Local Lemma GZ_is_GZ : GZ = G Z z_structure.
+    Proof.
+      use pathsinv0; use GF_ob_is_identity.
+    Qed.
+
+    Local Definition h_structure : d' -->[ h ] z_structure.
+    Proof.
+      refine (transportf (λ u, u -->[ h ] _) (FG_ob_is_identity _ _) _).
+      refine (♯ F Gh).
+    Defined.
+
+    Let h_tot : total_category disp_D'⟦ c' ,, d' , Z ,, z_structure ⟧ := h ,, h_structure.
+
+    Local Lemma coeq_eq : f_tot · h_tot = g_tot · h_tot.
+    Proof.
+      use (mor_eq_total_category_when_locally_prop loc_D'); cbn.
+      exact (maponpaths pr1 (pr122 (iscontrpr1 (hyp _ _ Gf_tot Gg_tot p)))).
+    Qed.
+
+    Local Lemma h_is_coequalizer
+      : isCoequalizer f_tot g_tot h_tot coeq_eq.
+    Proof.
+      use make_isCoequalizer; intros [c'' d''] [k k'] eq; cbn in k, k', eq.
+      assert (Gf_tot · Gh_tot = Gg_tot · Gh_tot) as Geq
+      by exact (pr122 (iscontrpr1 (hyp _ _ Gf_tot Gg_tot p))).
+      assert (isCoequalizer Gf_tot Gg_tot Gh_tot Geq) as coeq
+      by exact (pr222 (iscontrpr1 (hyp _ _ Gf_tot Gg_tot p))).
+
+      transparent assert (Gk_tot : (total_category disp_D ⟦ c',, Gd', c'',, G c'' d'' ⟧)).
+      { exists k; exact (♯ G k'). }
+
+      assert (Gf_tot · Gk_tot = Gg_tot · Gk_tot) as Gk_eq.
+      { use (mor_eq_total_category_when_locally_prop loc_D); use (maponpaths pr1 eq). }
+
+      specialize (coeq _ _ Gk_eq).
+      pose (ψ_C := pr11 (iscontrpr1 coeq)).
+      pose (ψ_D := pr21 (iscontrpr1 coeq)).
+      cbn in ψ_C, ψ_D; fold ψ_C in ψ_D.
+
+      use unique_exists.
+      - exists ψ_C; cbn.
+        refine (transportf (λ u, u -->[ ψ_C ] _) (FG_ob_is_identity _ _) _).
+        refine (transportf (λ u, _ -->[ ψ_C ] u) (FG_ob_is_identity _ _) _).
+        refine (transportf (λ u, F Z u -->[ _ ] _) GZ_is_GZ _).
+        use (♯ F ψ_D).
+      - abstract (
+          use (mor_eq_total_category_when_locally_prop loc_D');
+          exact (maponpaths pr1 (pr2 (iscontrpr1 coeq)))
+        ).
+      - abstract (intros ?; use homset_property).
+      - abstract (
+          intros [ϕ ϕ'] eq'; cbn in ϕ, ϕ', eq';
+          use (mor_eq_total_category_when_locally_prop loc_D'); cbn;
+          transparent assert (ϕ_tot' : (total_category disp_D ⟦ Z,, GZ, c'',, G c'' d'' ⟧));
+          [exists ϕ; cbn|];
+          [refine (transportb (λ u, u -->[ _ ] _) GZ_is_GZ _)|];
+          [exact (♯ G ϕ')|];
+          use (maponpaths pr1 (path_to_ctr _  _ coeq ϕ_tot' _));
+          use (mor_eq_total_category_when_locally_prop loc_D); 
+          use (maponpaths pr1 eq')
+        ).
+    Qed.
+
+    Context (z_structure' : disp_D' Z).
+    Context (h_structure' : d' -->[ h] z_structure').
+
+    Let h_tot' : total_category disp_D'⟦ c' ,, d' , Z ,, z_structure' ⟧ := h ,, h_structure'.
+
+    Context (eq' : f_tot · h_tot' = g_tot · h_tot').
+    Context (coeq : isCoequalizer f_tot g_tot h_tot' eq').
+
+    Let Gh' : Gd' -->[ h ] G Z z_structure' := ♯ G h_structure'.
+    Let Gh_tot' : total_category disp_D⟦ c' ,, Gd' , Z ,, G _ z_structure' ⟧ := h ,, Gh'.
+
+    Local Lemma coeq_eq' 
+      : Gf_tot · Gh_tot' = Gg_tot · Gh_tot'.
+    Proof.
+      use (mor_eq_total_category_when_locally_prop loc_D).
+      use (maponpaths pr1 eq').
+    Qed.
+
+    Local Lemma h'_is_coequalizer
+      : isCoequalizer Gf_tot Gg_tot Gh_tot' coeq_eq'.
+    Proof.
+      use make_isCoequalizer; intros [c'' d''] [k k'] eq; cbn in k, k', eq.
+      transparent assert (Fk_tot : (total_category disp_D' ⟦ c',, d', c'',, F c'' d'' ⟧)).
+      { exists k.
+        refine (transportf (λ u, u -->[ k ] _) (FG_ob_is_identity _ _) _).
+        exact (♯ F k'). }
+      assert (f_tot · Fk_tot = g_tot · Fk_tot) as Fk_hyp.
+      { use (mor_eq_total_category_when_locally_prop loc_D'); use (maponpaths pr1 eq). }
+      specialize (coeq _ _ Fk_hyp).
+      use unique_exists; simpl.
+      - exists (pr11 (iscontrpr1 coeq)).
+        refine (transportf (λ u, _ -->[ _ ] u) (GF_ob_is_identity _ _) _).
+        exact (♯ G (pr21 (iscontrpr1 coeq))).
+      - use subtypePath.
+        { intro; use loc_D. }
+        { use (maponpaths pr1 (pr2 (iscontrpr1 coeq))). }
+      - intro.
+        eassert (∏ (u v : C) (uu : disp_D u) (vv : disp_D v), isaset (∑ x, uu -->[ x ] vv)) as q
+        by (
+          intros u v uu vv;
+          pose (uuu := u ,, uu : total_category disp_D);
+          pose (vvv := v ,, vv : total_category disp_D);
+          use (homset_property (total_category disp_D) uuu vvv)
+        ); use q.
+      - intros [y y'] y_eq.
+        use subtypePath.
+        { intro; use loc_D. }
+        cbn.
+        transparent assert (a : (total_category disp_D' ⟦ Z,, z_structure', c'',, F c'' d'' ⟧)).
+        { exists y; cbn.
+          refine (transportf (λ u, u -->[ y ] _) (FG_ob_is_identity _ _) _).
+          use (♯ F y'). }
+        assert (a_hyp : h_tot' · a = Fk_tot).
+        { use (mor_eq_total_category_when_locally_prop loc_D').
+          use (maponpaths pr1 y_eq). }
+        use (maponpaths pr1 (path_to_ctr _ _ coeq _ a_hyp)).
+    Qed.
+  
+    Local Lemma z_structure_unique
+      : z_structure' = z_structure.
+    Proof.
+      unfold z_structure; cbn.
+      refine (!_ @ _).
+      { use FG_ob_is_identity. }
+      { apply maponpaths; unfold GZ.
+        eapply (path_to_ctr _ _ (hyp _ _ Gf_tot Gg_tot p)).
+        do 2 eexists; use h'_is_coequalizer. }
+    Qed.
+  End FixASplitCoequalizer.
+
+
+  Proposition strictly_creates_coequalizers_of_U_split_pairs_catiso_one_side
+    : strictly_creates_coequalizers_of_U_split_pairs disp_D'.
+  Proof.
+    intros [c d] [c' d'] [f f'] [g g'] p; cbn.
+    use make_iscontr.
+    - do 3 eexists; use h_is_coequalizer.
+    - abstract (
+        intros [z_structure' [h_structure' [eq' coeq']]];
+        use subtypePath; [|now use z_structure_unique];
+        intro; use isaproptotal2;
+        [intro; use isaproptotal2|];
+        [intro; use isaprop_isCoequalizer| |];
+        intros; use proofirrelevance; [|use loc_D'];
+        eassert (∏ (u v : C) (uu : disp_D' u) (vv : disp_D' v), isaset (∑ x, uu -->[ x ] vv)) as q
+        by (
+          intros u v uu vv;
+          pose (uuu := u ,, uu : total_category disp_D');
+          pose (vvv := v ,, vv : total_category disp_D');
+          use (homset_property (total_category disp_D') uuu vvv)
+        ); use q
+      ).
+  Defined.
+End CatIsoStrictlyCreatesCoequalizers.
+
+Proposition strictly_creates_coequalizers_of_U_split_pairs_catiso
+  {C : category} {disp_D disp_D' : disp_cat C} 
+  (loc_D : locally_propositional disp_D) (loc_D' : locally_propositional disp_D')
+  (F : disp_functor (functor_identity C) disp_D disp_D') (F_hyp : disp_functor_iso F)
+  : strictly_creates_coequalizers_of_U_split_pairs disp_D 
+  ≃ strictly_creates_coequalizers_of_U_split_pairs disp_D'.
+Proof.
+  use weqiff; try use isaprop_strictly_creates_coequalizers_of_U_split_pairs.
+  split.
+  - now use strictly_creates_coequalizers_of_U_split_pairs_catiso_one_side.
+  - now use (strictly_creates_coequalizers_of_U_split_pairs_catiso_one_side _ _ _ (G_hyp _ _ _ _)).
+Defined.
         
 Section MonadicAdjunctions.
   Context {C : category}.
-  Context {disp_D : disp_cat C}.
+  Context {disp_D : disp_cat C} (loc_D : locally_propositional disp_D).
   Let D : category := total_category disp_D.
   Let R : D ⟶  C := pr1_category disp_D.
   Opaque R.
@@ -403,164 +649,55 @@ Section MonadicAdjunctions.
   Local Definition T : Monad C
     := Monad_from_adjunction adj.
 
-  Definition comparison_functor_data : functor_data D (MonadAlg_disp T).
+  Definition comparison_disp_functor_data 
+    : disp_functor_data (functor_identity C) disp_D (Algebra_disp_cat T).
   Proof.
-    use make_functor_data.
-    - intro d; use (_ ,, _ ,, _); cbn.
-      + exact (R d).
-      + use #R; exact (counit_from_are_adjoints adj d).
-      + exists (triangle_id_right_ad _ _); cbn.
-        abstract (
-          do 2 rewrite <- (functor_comp R); apply maponpaths;
-          apply (!nat_trans_ax (counit_from_are_adjoints adj) _ _ _)
-        ).
-    - intros d d' f; exists (#R f).
-      abstract (
-        unfold is_Algebra_mor; cbn;
-        do 2 rewrite <- (functor_comp R); apply maponpaths;
-        use (!nat_trans_ax (counit_from_are_adjoints adj) _ _ _)
-      ).
+    use tpair.
+    - intros c d; use (_ ,, _ ,, _).
+      + exact (pr1 (counit_from_are_adjoints adj (c ,, d))).
+      + abstract use (triangle_id_right_ad adj (c ,, d)).
+      + abstract use (!maponpaths pr1 (nat_trans_ax (counit_from_are_adjoints adj)
+            _ _ (counit_from_are_adjoints adj (c,, d)))).
+    - intros c c' d d' f f'.
+      abstract use (!maponpaths pr1 (nat_trans_ax (counit_from_are_adjoints adj)
+          (c ,, d) (c' ,, d') (f ,, f'))).
   Defined.
 
-  Lemma comparison_functor_is_functor
-    : is_functor comparison_functor_data.
+  Lemma comparison_disp_functor_is_functor
+    : disp_functor_axioms comparison_disp_functor_data.
   Proof.
-    split.
-    - intro.
-      use subtypePath.
-      { intro; use homset_property. }
-      use functor_id.
-    - intros ? ? ? ? ?.
-      use subtypePath.
-      { intro; use homset_property. }
-      use functor_comp.
+    split; intros; use proofirrelevance; use homset_property.
   Qed.
 
-  Definition comparison_functor : D ⟶  (MonadAlg_disp T).
+  Definition comparison_disp_functor 
+    : disp_functor (functor_identity _) disp_D (Algebra_disp_cat T).
   Proof.
-    use make_functor.
-    - exact comparison_functor_data.
-    - exact comparison_functor_is_functor.
+    use tpair.
+    - exact comparison_disp_functor_data.
+    - exact comparison_disp_functor_is_functor.
   Defined.
-
-  Lemma comparison_functor_to_forgetful
-    : comparison_functor ∙ forget_Alg_disp T = R.
-  Proof.
-    use functor_eq.
-    - use homset_property.
-    - reflexivity.
-  Qed.
-
-  Definition is_monadic 
-    := adj_equivalence_of_cats comparison_functor.
 
   Definition is_strict_monadic 
-    := is_catiso comparison_functor.
+    := disp_functor_iso comparison_disp_functor.
 
   Lemma isaprop_is_strict_monadic
     : isaprop is_strict_monadic.
   Proof.
-    use isaprop_is_catiso.
+    use isapropdirprod.
+    - use isaprop_disp_functor_ff.
+    - use impred_isaprop; intro; use isapropisweq.
   Qed.
-
-  Section StrictMonadicity1.
-    Context (hyp : is_strict_monadic).
-    Context (x y : D).
-    Context (f g : D ⟦ x, y ⟧).
-    Context (d : split_coequalizer (# R f) (# R g)).
-    Let Z := split_coequalizer_ob d.
-    Let e := split_coequalizer_arrow d.
-
-    Let K := comparison_functor.
-    Let K' := inv_catiso (K ,, hyp).
-    Let U := forget_Alg_disp T.
-
-    Let f' := #K f.
-    Let g' := #K g.
-
-    Local Lemma unique_algebra_structure
-      : ∃! (z_structure : Algebra_disp_cat T Z)
-       (z' := Z ,, z_structure)
-       (e_structure : pr2 (K y) -->[ e] z_structure) 
-       (e' := (e,, e_structure) : MonadAlg_disp T⟦K y , z'⟧)
-       (eq : f' · e' = g' · e'),
-       isCoequalizer f' g' e' eq.
-    Proof.
-      use (forgetful_algebra_functor_creates_coequalizers_of_U_split_pairs T _ _ f' g').
-    Qed.
-
-    Let KZ : MonadAlg_disp T := Z ,, pr1 (iscontrpr1 unique_algebra_structure).
-    Let Ke : MonadAlg_disp T⟦K y, KZ⟧ := e ,, pr12 (iscontrpr1 unique_algebra_structure).
-
-    Local Lemma K'K : K'∙K = functor_identity _.
-    Proof.
-    Admitted.
-      (*
-      use funextsec; intro u; use (homotweqinvweq (catiso_ob_weq (K,, hyp)) u).
-    Qed.
-       *)
-
-    (*
-    Local Lemma K'KZ_pr1 : R (K' KZ) = Z.
-    Proof.
-      exact (maponpaths (λ f : MonadAlg_disp T ⟶ MonadAlg_disp T, U (f KZ)) K'K).
-    Qed.
-
-    Local Definition z_structure : disp_D Z
-      := transportf _ K'KZ_pr1 (pr2 _).
-
-    Local Definition e_structure : pr2 y -->[ split_coequalizer_arrow d ] z_structure.
-    Proof.
-      eassert _ by exact (pr2 (#K' Ke)).
-      refine (transportf (λ f : MonadAlg_disp T ⟶ MonadAlg_disp T,
-        pr2 (f (K y)) -->[ pr1 (#f (#K' e))] pr2 (f KZ)) K'K X).
-
-
-
-
-    Goal ∃! (z_structure : disp_D Z)
-      (z' := Z,, z_structure)
-(e_structure : pr2 y -->[ split_coequalizer_arrow d] z_structure)
-(e' : D⟦y, z'⟧ := (split_coequalizer_arrow d,, e_structure))
-(eq : f · e' =
-      g · e'),
-isCoequalizer f g e' eq.
-
-     *)
-  End StrictMonadicity1.
 
   Theorem strict_monadicity_theorem_1 
     : is_strict_monadic → strictly_creates_coequalizers_of_U_split_pairs disp_D.
   Proof.
-    (*
-    intros hyp.
-    unfold strictly_creates_coequalizers_of_U_split_pairs; fold D.
-    intros x y f g d.
-    pose ().
-    pose ().
-    transparent assert (d' : (split_coequalizer (# U (# K f)) (# U (# K g)))).
-    { unfold split_coequalizer.
-
-    show_id_type.
-       *)
-  Admitted.
+    intro hyp.
+    refine (invmap _ (forgetful_algebra_functor_creates_coequalizers_of_U_split_pairs T)).
+    use strictly_creates_coequalizers_of_U_split_pairs_catiso.
+    - exact loc_D.
+    - exact (Algebra_disp_cat_locally_propositional T).
+    - exact comparison_disp_functor.
+    - exact hyp.
+  Qed.
 
 End MonadicAdjunctions.
-
-(*
-Proposition monadic_adjunction_trivial
-  {C D : category}
-  (T : Monad C)
-  : is_strict_monadic (free_Alg T) (forget_Alg T) (free_forgetful_are_adjoints T).
-Proof.
-  split.
-  - intros x y; cbn.
-    use (weqproperty (weq_iso _ _ _ _)); cbn.
-    + exact (λ u, u).
-    + abstract (intro; use pair_path_in2; use proofirrelevance; use homset_property).
-    + abstract (intro; use pair_path_in2; use proofirrelevance; use homset_property).
-  - use (weqproperty (weq_iso _ _ _ _)); cbn.
-    + exact (λ u, u).
-    + abstract (intro; use pair_path_in2; use proofirrelevance; use isapropdirprod; use homset_property).
-    + abstract (intro; use pair_path_in2; use proofirrelevance; use isapropdirprod; use homset_property).
-   Qed. *)

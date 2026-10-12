@@ -18,6 +18,8 @@ Require Import UniMath.CategoryTheory.DisplayedCats.NaturalTransformations.
 Require Import UniMath.CategoryTheory.DisplayedCats.Isos.
 Require Import UniMath.CategoryTheory.DisplayedCats.Univalence.
 
+Require Import UniMath.CategoryTheory.catiso.
+
 Local Open Scope cat.
 Local Open Scope mor_disp.
 
@@ -484,6 +486,36 @@ Section Total_Functors.
          exact (!(@id_left (total_category _) _ _ _))).
   Defined.
 
+
+  Definition total_functor_catiso {C}
+    {D D' : disp_cat C} {FF : disp_functor (functor_identity C) D D'}
+    (FF_hyp : disp_functor_iso FF)
+    : is_catiso (total_functor FF).
+  Proof.
+    induction FF_hyp as [hyp_ff hyp_weq]; split.
+    - intros [c d] [c' d'].
+      specialize (hyp_ff c c' d d').
+      use (weqproperty (weq_iso _ _ _ _)); cbn.
+      + intros [f ff]; exists f.
+        pose (p := iscontrpr1 (hyp_ff f ff)).
+        exact (hfiberpr1 _ _ p).
+      + abstract (
+          intros [f ff]; use pair_path_in2; cbn;
+          apply (invmaponpathsincl _ (isinclweq _ _ _ (hyp_ff _)));
+          use hfiberpr2
+        ).
+      + abstract (intros [f ff]; use pair_path_in2; use hfiberpr2).
+    - use (weqproperty (weq_iso _ _ _ _)); cbn.
+      + intros [c d]; exists c.
+        pose (p := iscontrpr1 (hyp_weq c d)).
+        exact (hfiberpr1 _ _ p).
+      + abstract (
+          intros [c d]; use pair_path_in2; cbn;
+          apply (invmaponpathsincl _ (isinclweq _ _ _ (hyp_weq _)));
+          use hfiberpr2
+        ).
+      + abstract (intros [c d]; use pair_path_in2; use hfiberpr2).
+  Defined.
 End Total_Functors.
 
 Section Total_Nat_Trans.
