@@ -52,7 +52,6 @@ Require Import UniMath.CategoryTheory.Monads.MonadAlgebras.
 
 Require Import UniMath.CategoryTheory.coslicecat.
 Require Import UniMath.CategoryTheory.catiso.
-Require Import UniMath.CategoryTheory.Monics.
 Require Import UniMath.CategoryTheory.Epis.
 Require Import UniMath.CategoryTheory.IdempotentsAndSplitting.Retracts.
 Require Import UniMath.CategoryTheory.SplitMonicsAndEpis.
@@ -128,7 +127,7 @@ Section FreeModelAdjunction.
     use (omega_signature_with_strength_inherits_colimits _ _ _ _
       (bincoproduct_diagram H_omega_sig_strength (tens_omega_sig_strength v))).
     - use CP.
-    - use left_whiskering_preserves_coproducts.
+    - intro; use left_whiskering_preserves_coproducts.
   Defined.
 
   Local Definition H̃ v
@@ -935,187 +934,182 @@ Section FreeModelAdjunction.
     Defined.
 
     Section CreatesCoequalizers.
-      Context (D : SigmaMonoid θ).
-      Context (k : SigmaMonoid θ ⟦ B, D ⟧).
-      Context (hyp : f · k = g · k).
+      Context (C_structure' : SigmaMonoid_disp_cat_no_compatibility C)
+              (e_structure' : pr12 B -->[ e] C_structure')
+              (C_comp' : SigmaMonoid_compatibility θ (C,, C_structure')).
 
-      Local Lemma hyp'
-        : #forgetful f · #forgetful k = #forgetful g · #forgetful k.
-      Proof.
-        do 2 rewrite <- functor_comp; now apply maponpaths.
-      Qed.
+      Let C_mon' := C,, C_structure',, C_comp' : SigmaMonoid θ.
+      Let e_mon' := e,, e_structure',, tt : SigmaMonoid θ ⟦ B, C_mon' ⟧.
 
-      Let ϕ : V⟦C , forgetful D⟧ := s · #forgetful k.
+      Let τC' := pr1 C_structure'.
+      Let ηC' := monoid_data_unit _ (pr12 C_structure').
+      Let μC' := monoid_data_multiplication _ (pr12 C_structure').
 
-      Local Lemma ϕ_commutes_with_τ
-        : τC · ϕ = # H ϕ · SigmaMonoid_τ _ D.
-      Proof.
-        unfold ϕ; rewrite assoc, functor_comp.
-        etrans.
-        2: { rewrite <- assoc; use cancel_precomposition.
-          - exact (SigmaMonoid_τ _ B · #forgetful k).
-          - use (pr112 k). }
-        rewrite assoc.
-        use (EpiisEpi _ (split_epi_to_epi (_ ,, He_is_split_epi))); cbn.
-        do 2 rewrite assoc.
-        etrans.
-        { do 2 apply cancel_postcomposition; use e_commutes_with_τ. }
-        do 2 rewrite assoc; symmetry; etrans.
-        { rewrite <- functor_comp; do 2 apply cancel_postcomposition; apply maponpaths; use (!tUg_es). }
-        rewrite functor_comp, <- assoc, <- assoc.
-        etrans.
-        { apply cancel_precomposition; rewrite assoc; use cancel_postcomposition.
-          - exact (SigmaMonoid_τ _ A · #forgetful g).
-          - use (!pr112 g). }
-        etrans.
-        { apply cancel_precomposition; rewrite <- assoc; apply cancel_precomposition.
-          use (!hyp'). }
-        do 2 rewrite assoc.
-        etrans.
-        2: {
-          do 2 rewrite <- assoc; apply cancel_precomposition.
-          rewrite assoc; apply cancel_postcomposition; apply tUg_es. }
-        do 2 rewrite assoc.
-        etrans.
-        2: { rewrite <- assoc; apply cancel_precomposition.
-          apply hyp'. }
-        rewrite assoc.
-        apply cancel_postcomposition.
-        etrans.
-        2: { rewrite <- assoc; apply cancel_precomposition; use (!tUf_id). }
-        rewrite id_right.
-        etrans.
-        { rewrite <- assoc; apply cancel_precomposition; use (pr112 f). }
-        rewrite assoc, <- functor_comp, <- id_left, <- functor_id; apply cancel_postcomposition.
-        use maponpaths.
-        use tUf_id.
-      Qed.
+      Section FixASigmaMonoid.
+        Context (D : SigmaMonoid θ).
+        Context (k : SigmaMonoid θ ⟦ B, D ⟧).
+        Context (hyp : f · k = g · k).
 
-      Local Lemma ϕ_is_monoid_mor
-        : is_monoid_mor Mon_V C_monoid (pr2 (SigmaMonoid_to_monoid _ D)) ϕ.
-      Proof.
-        split.
-        - unfold is_monoid_mor_mult; cbn; unfold ϕ.
-          use (EpiisEpi _ (split_epi_to_epi (_ ,, ee_is_split_epi))); cbn.
-          do 3 rewrite assoc.
-          rewrite (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+        Local Lemma hyp'
+          : #forgetful f · #forgetful k = #forgetful g · #forgetful k.
+        Proof.
+          do 2 rewrite <- functor_comp; now apply maponpaths.
+        Qed.
+
+        Let ϕ : V⟦C , forgetful D⟧ := s · #forgetful k.
+
+        Local Lemma ϕ_commutes_with_τ
+          : τC' · ϕ = # H ϕ · SigmaMonoid_τ _ D.
+        Proof.
+          unfold ϕ; rewrite assoc, functor_comp.
+          etrans.
+          2: { rewrite <- assoc; use cancel_precomposition.
+            - exact (SigmaMonoid_τ _ B · #forgetful k).
+            - use (pr112 k). }
           rewrite assoc.
-          rewrite <-(bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+          use (EpiisEpi _ (split_epi_to_epi (_ ,, He_is_split_epi))); cbn.
+          do 2 rewrite assoc.
           etrans.
-          { do 2 apply cancel_postcomposition; exact (!maponpaths (λ x, x ⊗^{Mon_V} x) tUg_es). }
-          rewrite (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+          { do 2 apply cancel_postcomposition; use (!pr1 e_structure'). }
+          do 2 rewrite assoc; symmetry; etrans.
+          { rewrite <- functor_comp; do 2 apply cancel_postcomposition; apply maponpaths; use (!tUg_es). }
+          rewrite functor_comp, <- assoc, <- assoc.
           etrans.
-          { apply cancel_postcomposition.
-            rewrite <- assoc.
-            rewrite <- (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
-            apply cancel_precomposition.
-            refine (!maponpaths (λ x, x ⊗^{Mon_V} x) _).
-            apply hyp'. }
-          rewrite (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
-          rewrite assoc.
+          { apply cancel_precomposition; rewrite assoc; use cancel_postcomposition.
+            - exact (SigmaMonoid_τ _ A · #forgetful g).
+            - use (!pr112 g). }
           etrans.
-          2: { do 2 apply cancel_postcomposition; apply (!e_commutes_with_μ). }
+          { apply cancel_precomposition; rewrite <- assoc; apply cancel_precomposition.
+            use (!hyp'). }
+          do 2 rewrite assoc.
           etrans.
-          2: { do 2 rewrite <- assoc; apply cancel_precomposition; rewrite assoc.
-            apply cancel_postcomposition; use tUg_es. }
+          2: {
+            do 2 rewrite <- assoc; apply cancel_precomposition.
+            rewrite assoc; apply cancel_postcomposition; apply tUg_es. }
           do 2 rewrite assoc.
           etrans.
           2: { rewrite <- assoc; apply cancel_precomposition.
             apply hyp'. }
+          rewrite assoc.
+          apply cancel_postcomposition.
           etrans.
-          2: { rewrite <- assoc; apply cancel_precomposition.
-            rewrite assoc; apply cancel_postcomposition; use (!tUf_id). }
-          rewrite id_left.
+          2: { rewrite <- assoc; apply cancel_precomposition; use (!tUf_id). }
+          rewrite id_right.
           etrans.
-          { rewrite <- assoc; apply cancel_precomposition.
-            use (pr1 (pr212 k)). }
-          rewrite assoc, <- id_left, assoc; do 2  apply cancel_postcomposition.
-          rewrite <- (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
-          rewrite tUf_id.
-          use (bifunctor_distributes_over_id (bifunctor_leftid _) (bifunctor_rightid Mon_V)).
-        - unfold is_monoid_mor_unit; cbn; unfold ϕ, ηC; rewrite assoc.
+          { rewrite <- assoc; apply cancel_precomposition; use (pr112 f). }
+          rewrite assoc, <- functor_comp, <- id_left, <- functor_id; apply cancel_postcomposition.
+          use maponpaths.
+          use tUf_id.
+        Qed.
+
+        Local Lemma ϕ_is_monoid_mor
+          : is_monoid_mor Mon_V (pr2 C_structure') (pr2 (SigmaMonoid_to_monoid _ D)) ϕ.
+        Proof.
+          split.
+          - unfold is_monoid_mor_mult; cbn; unfold ϕ.
+            use (EpiisEpi _ (split_epi_to_epi (_ ,, ee_is_split_epi))); cbn.
+            do 3 rewrite assoc.
+            rewrite (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+            rewrite assoc.
+            rewrite <-(bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+            etrans.
+            { do 2 apply cancel_postcomposition; exact (!maponpaths (λ x, x ⊗^{Mon_V} x) tUg_es). }
+            rewrite (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+            etrans.
+            { apply cancel_postcomposition.
+              rewrite <- assoc.
+              rewrite <- (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+              apply cancel_precomposition.
+              refine (!maponpaths (λ x, x ⊗^{Mon_V} x) _).
+              apply hyp'. }
+            rewrite (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+            rewrite assoc.
+            etrans.
+            2: { do 2 apply cancel_postcomposition; apply (!pr12 e_structure'). }
+            etrans.
+            2: { do 2 rewrite <- assoc; apply cancel_precomposition; rewrite assoc.
+              apply cancel_postcomposition; use tUg_es. }
+            do 2 rewrite assoc.
+            etrans.
+            2: { rewrite <- assoc; apply cancel_precomposition.
+              apply hyp'. }
+            etrans.
+            2: { rewrite <- assoc; apply cancel_precomposition.
+              rewrite assoc; apply cancel_postcomposition; use (!tUf_id). }
+            rewrite id_left.
+            etrans.
+            { rewrite <- assoc; apply cancel_precomposition.
+              use (pr1 (pr212 k)). }
+            rewrite assoc, <- id_left, assoc; do 2  apply cancel_postcomposition.
+            rewrite <- (bifunctor_distributes_over_comp (bifunctor_leftcomp _) (bifunctor_rightcomp _) (bifunctor_equalwhiskers Mon_V)).
+            rewrite tUf_id.
+            use (bifunctor_distributes_over_id (bifunctor_leftid _) (bifunctor_rightid Mon_V)).
+          - unfold is_monoid_mor_unit; cbn; unfold ϕ; rewrite assoc.
+            etrans.
+            2: { use (pr2 (pr212 k)). }
+            etrans.
+            { do 2 apply cancel_postcomposition; apply (!pr22 e_structure'). }
+            do 2 rewrite <- assoc; apply cancel_precomposition; rewrite assoc.
+            etrans.
+            { apply cancel_postcomposition; apply (!tUg_es). }
+            etrans.
+            { rewrite <- assoc; apply cancel_precomposition; use (!hyp'). }
+            now rewrite assoc, tUf_id, id_left.
+        Qed.
+
+        Local Definition e_mon_isCoequalizer_arrow
+          : SigmaMonoid θ ⟦ C_mon', D ⟧.
+        Proof.
+          use (_ ,, (_ ,, _) ,, tt); cbn.
+          - exact ϕ.
+          - exact ϕ_commutes_with_τ.
+          - exact ϕ_is_monoid_mor.
+        Defined.
+
+        Local Lemma e_mon_isCoequalizer_arrow_property
+          : e_mon' · e_mon_isCoequalizer_arrow = k.
+        Proof.
+          use SigmaMonoid_mor_eq; cbn; unfold ϕ.
+          rewrite assoc.
           etrans.
-          { do 2 rewrite <- assoc; apply cancel_precomposition.
-            rewrite assoc; apply cancel_postcomposition.
-            use (!tUg_es). }
-          do 2 rewrite assoc; rewrite <- assoc.
-          etrans.
-          { apply cancel_precomposition; apply (!hyp'). }
+          { apply cancel_postcomposition; use (!tUg_es). }
           rewrite <- assoc.
           etrans.
-          { apply cancel_precomposition.
-            rewrite assoc; apply cancel_postcomposition.
-            use tUf_id. }
-          rewrite id_left.
-          use (pr2 (pr212 k)).
-      Qed.
+          { apply cancel_precomposition; use (!hyp'). }
+          rewrite assoc, <- id_left; apply cancel_postcomposition.
+          use tUf_id.
+        Qed.
 
-      Local Definition e_mon_isCoequalizer_arrow
-        : SigmaMonoid θ ⟦ C_mon, D ⟧.
-      Proof.
-        use (_ ,, (_ ,, _) ,, tt); cbn.
-        - exact ϕ.
-        - exact ϕ_commutes_with_τ.
-        - exact ϕ_is_monoid_mor.
-      Defined.
+        Local Lemma e_mon_isCoequalizer_arrow_unique
+          (ψ : SigmaMonoid θ ⟦ C_mon', D ⟧)
+          (ψ_hyp : e_mon' · ψ = k)
+          : ψ = e_mon_isCoequalizer_arrow.
+        Proof.
+          eassert (e · #forgetful ψ = #forgetful k) as ψ_hyp'
+          by now rewrite <- ψ_hyp, functor_comp.
+          use SigmaMonoid_mor_eq; cbn; unfold ϕ.
+          use (EpiisEpi _ (split_epi_to_epi (_ ,, e_is_split_epi))); cbn.
+          rewrite assoc; refine (ψ_hyp' @ _).
+          etrans.
+          2: { apply cancel_postcomposition. apply tUg_es. }
+          rewrite <- assoc.
+          etrans.
+          2: { apply cancel_precomposition; use hyp'. }
+          now rewrite assoc, tUf_id, id_left.
+        Qed.
+      End FixASigmaMonoid.
 
-      Local Lemma e_mon_isCoequalizer_arrow_property
-        : e_mon · e_mon_isCoequalizer_arrow = k.
-      Proof.
-        use SigmaMonoid_mor_eq; cbn; unfold ϕ.
-        rewrite assoc.
-        etrans.
-        { apply cancel_postcomposition; use (!tUg_es). }
-        rewrite <- assoc.
-        etrans.
-        { apply cancel_precomposition; use (!hyp'). }
-        rewrite assoc, <- id_left; apply cancel_postcomposition.
-        use tUf_id.
-      Qed.
-
-      Local Lemma e_mon_isCoequalizer_arrow_unique
-        (ψ : SigmaMonoid θ ⟦ C_mon, D ⟧)
-        (ψ_hyp : e_mon · ψ = k)
-        : ψ = e_mon_isCoequalizer_arrow.
-      Proof.
-        eassert (e · #forgetful ψ = #forgetful k) as ψ_hyp'
-        by now rewrite <- ψ_hyp, functor_comp.
-        use SigmaMonoid_mor_eq; cbn; unfold ϕ.
-        use (EpiisEpi _ (split_epi_to_epi (_ ,, e_is_split_epi))); cbn.
-        rewrite assoc; refine (ψ_hyp' @ _).
-        etrans.
-        2: { apply cancel_postcomposition. apply tUg_es. }
-        rewrite <- assoc.
-        etrans.
-        2: { apply cancel_precomposition; use hyp'. }
-        now rewrite assoc, tUf_id, id_left.
-      Qed.
-    End CreatesCoequalizers.
-
-
-    Local Lemma e_mon_isCoequalizer
-      : isCoequalizer f g e_mon (SigmaMonoid_mor_eq _ (f · e_mon) (g · e_mon) Ufe_Uge).
+    Local Lemma e_mon'_isCoequalizer
+      : isCoequalizer f g e_mon' (SigmaMonoid_mor_eq _ (f · e_mon') (g · e_mon') Ufe_Uge).
     Proof.
       use make_isCoequalizer.
       intros D k hyp.
       use unique_exists.
       - now use e_mon_isCoequalizer_arrow.
-      - abstract (use e_mon_isCoequalizer_arrow_property).
+      - abstract use e_mon_isCoequalizer_arrow_property.
       - abstract (intro; use homset_property).
-      - abstract (use e_mon_isCoequalizer_arrow_unique).
-    Defined.
-
-    Context 
-      (C_structure' : SigmaMonoid_disp_cat_no_compatibility C)
-      (e_structure' : pr12 B -->[ e ] C_structure')
-      (C_comp' : SigmaMonoid_compatibility θ (C ,, C_structure'))
-      (C_mon' := (C ,, C_structure' ,, C_comp') : SigmaMonoid θ)
-      (e_mon' := (e ,, e_structure' ,, tt) : SigmaMonoid θ ⟦ B, C_mon' ⟧)
-      (e_mon'_hyp : isCoequalizer f g e_mon' (SigmaMonoid_mor_eq _ (f · e_mon') (g · e_mon') Ufe_Uge)).
-
-    Let τC' := pr1 C_structure'.
-    Let ηC' := monoid_data_unit _ (pr12 C_structure').
-    Let μC' := monoid_data_multiplication _ (pr12 C_structure').
+      - abstract use e_mon_isCoequalizer_arrow_unique.
+    Qed.
 
     Local Lemma ηC_unique 
       : ηC' = ηC.
@@ -1148,6 +1142,8 @@ Section FreeModelAdjunction.
         + use μC_unique.
         + use ηC_unique.
     Qed.
+
+    End CreatesCoequalizers.
   End ForgetfulCreatesUSplitCoequalizers.
 
   Proposition free_model_forgetful_creates_U_split_coequalizers
@@ -1160,34 +1156,91 @@ Section FreeModelAdjunction.
     (se_id : s · e = identity _)
     (tUf_id : t · #forgetful f = identity _)
     (tUg_es : t · #forgetful g = e · s)
-    : ∃! 
-      (C_structure : SigmaMonoid_disp_cat_no_compatibility C)
-      (e_structure : pr12 B -->[ e ] C_structure),
-      ∑ (C_comp : SigmaMonoid_compatibility θ (C ,, C_structure))
+    : (∃! (C_structure : SigmaMonoid_disp_cat_no_compatibility C)
+          (e_structure : pr12 B -->[ e ] C_structure),
+          SigmaMonoid_compatibility θ (C ,, C_structure)
+      ) × 
+      ∏ (C_structure : SigmaMonoid_disp_cat_no_compatibility C)
+        (e_structure : pr12 B -->[ e ] C_structure)
+        (C_comp : SigmaMonoid_compatibility θ (C ,, C_structure))
         (C_mon := (C ,, C_structure ,, C_comp) : SigmaMonoid θ)
         (e_mon := (e ,, e_structure ,, tt) : SigmaMonoid θ ⟦ B, C_mon ⟧),
-      isCoequalizer f g e_mon (SigmaMonoid_mor_eq _ (f · e_mon) (g · e_mon) Ufe_Uge)
-  .
+      isCoequalizer f g e_mon (SigmaMonoid_mor_eq _ (f · e_mon) (g · e_mon) Ufe_Uge).
   Proof.
-    use unique_exists.
-    - use (pr12 (C_mon _ _ _ f g e s t Ufe_Uge se_id tUf_id tUg_es)).
-    - abstract (
-        refine (pr12 (e_mon _ _ _ f g e s t Ufe_Uge se_id tUf_id tUg_es) ,, _);
-        refine (pr22 (C_mon _ _ _ f g e s t Ufe_Uge se_id tUf_id tUg_es) ,, _);
-        use e_mon_isCoequalizer
-      ).
-    - abstract (
-        intro; use isaproptotal2; simpl;
-        [intro; use isaproptotal2; simpl;
-          [intro; use isaprop_isCoequalizer|];
-          intros; use proofirrelevance; use homset_property|];
-        intros;
-        use proofirrelevance;
-        use isapropdirprod;
-        [use homset_property|];
-        use isaprop_is_monoid_mor
-      ).
-    - abstract (intros ? [? ?]; now use sigma_monoid_structure_unique).
+    split.
+    - use unique_exists.
+      + use (pr12 (C_mon _ _ _ f g e s t Ufe_Uge se_id tUf_id tUg_es)).
+      + abstract (
+          refine (pr12 (e_mon _ _ _ f g e s t Ufe_Uge se_id tUf_id tUg_es) ,, _);
+          refine (pr22 (C_mon _ _ _ f g e s t Ufe_Uge se_id tUf_id tUg_es))
+        ).
+      + abstract (
+          intro; use isaproptotal2; simpl;
+          [intro; use homset_property|];
+          intros;
+          use proofirrelevance;
+          use isapropdirprod;
+          [use homset_property|];
+          use isaprop_is_monoid_mor
+        ).
+      + abstract (intros ? [? ?]; now use sigma_monoid_structure_unique).
+    - now use e_mon'_isCoequalizer.
   Defined.
+
+  Theorem free_model_adjunction_is_strict_monadic
+    : is_strict_monadic _ free_model_adjunction.
+  Proof.
+    use strict_monadicity_theorem_2.
+    { intros x y f M M'.
+      do 2 try use isapropdirprod.
+      - use homset_property.
+      - use isaprop_is_monoid_mor.
+      - use isapropunit. }
+    intros M N f g d.
+    assert (r :=
+      free_model_forgetful_creates_U_split_coequalizers M N
+      (split_coequalizer_ob d) f g 
+      (split_coequalizer_arrow d) 
+      (split_coequalizer_section2_arrow d) 
+      (split_coequalizer_section1_arrow d)
+      (split_coequalizer_coeq_law d)
+      (split_coequalizer_section2_law d)
+      (split_coequalizer_section1_law d)
+      (!split_coequalizer_zigzag_law d)
+    ).
+    induction r as [[[C_structure [e_structure C_comp]] uniqueness] coeq].
+    split.
+    - use make_iscontr.
+      + use (_ ,, _ ,, _).
+        * exists C_structure; exact C_comp.
+        * exists e_structure; exact tt.
+        * abstract (
+            use subtypePath;
+            [| use split_coequalizer_coeq_law];
+            intro; do 2 try use isapropdirprod;
+            [use homset_property
+            |use isaprop_is_monoid_mor
+            |use isapropunit]
+          ).
+      + intros [C_structure_comp' [e_structure' eq']].
+        use subtypePath.
+        { intro.
+          use isaproptotal2.
+          { intro; use homset_property. }
+          intros; use proofirrelevance.
+          do 2 try use isapropdirprod;
+          [use homset_property
+          |use isaprop_is_monoid_mor
+          |use isapropunit]. }
+        cbn.
+        use subtypePath.
+        { intro; use homset_property. }
+        cbn.
+        use (maponpaths pr1 (uniqueness (_ ,, _ ,, _))).
+        * use (pr1 e_structure').
+        * use (pr2 C_structure_comp').
+    - intros; use coeq.
+  Qed.
 End FreeModelAdjunction.
+
 

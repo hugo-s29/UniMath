@@ -209,6 +209,24 @@ Proof.
     ).
 Defined.
 
+Definition MonadAlg_dispToMonadAlg
+  : MonadAlg_disp ⟶ MonadAlg.
+Proof.
+  use make_functor.
+  - use make_functor_data.
+    + intros [X [x x_laws]]; cbn in X, x.
+      use tpair.
+      { exists X; exact x. }
+      exact x_laws.
+    + intros X Y [f f_law]; cbn in X, Y, f; cbn.
+      exists f; exact f_law.
+  - abstract (
+      split; do 5 try intro; 
+      (use subtypePath; [intro; use homset_property|]); 
+      use idpath
+    ).
+Defined.
+
 Lemma MonadAlgToMonadAlg_disp_is_catiso : is_catiso MonadAlgToMonadAlg_disp.
 Proof.
   split.
